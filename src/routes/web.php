@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::view('dashboard', 'dashboard')->name('dashboard');
+    // Dashboard monitoring dinamis + personalisasi (KF-09/KF-10, Fase 5).
+    Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
 
     // Khusus Admin: pengelolaan pengguna dan hak akses (KF-02).
     Route::livewire('admin/users', 'pages::admin.users')

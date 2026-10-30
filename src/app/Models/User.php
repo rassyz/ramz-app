@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
-use Database\Factories\UserFactory;
+use App\Models\Pengajuan;
+use App\Models\PreferensiDashboard;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -16,7 +18,6 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use App\Models\Pengajuan;
 
 /**
  * @property int $id
@@ -36,7 +37,7 @@ use App\Models\Pengajuan;
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
@@ -100,5 +101,31 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function pengajuans(): HasMany
     {
         return $this->hasMany(Pengajuan::class);
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Preferensi dashboard (Fase 5)
+     |--------------------------------------------------------------------------
+     */
+
+    /**
+     * Preferensi personalisasi dashboard tersimpan milik pengguna ini.
+     *
+     * @return HasOne<PreferensiDashboard, $this>
+     */
+    public function preferensiDashboard(): HasOne
+    {
+        return $this->hasOne(PreferensiDashboard::class);
+    }
+
+    /**
+     * Preferensi dashboard efektif: record tersimpan bila ada, atau
+     * instance baru berisi nilai bawaan model bila belum pernah
+     * menyimpan (tanpa menulis ke basis data).
+     */
+    public function preferensiDashboardAtauBawaan(): PreferensiDashboard
+    {
+        return $this->preferensiDashboard ?? new PreferensiDashboard;
     }
 }
