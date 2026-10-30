@@ -1,0 +1,31 @@
+# OS / editor
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Workspace editor settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Docker local database volume
+db/data/
+
+# Laravel app (inside src)
+src/vendor/
+src/node_modules/
+src/public/build/
+src/public/hot
+src/storage/*.key
+src/storage/logs/*.log
+src/.phpunit.cache/
+src/.phpunit.result.cache
+
+# JS package manager logs
+src/npm-debug.log*
+src/yarn-error.log*
+src/pnpm-debug.log*
+db/data/*

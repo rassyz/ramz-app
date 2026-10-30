@@ -1,0 +1,56 @@
+services:
+  php:
+    build:
+      context: ./php
+    container_name: rama_php
+    volumes:
+      - ./src:/var/www/html
+    environment:
+      - PROJECT_NAME=rama
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "composer", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: rama_nginx
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - php
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --silent --show-error --fail --insecure https://rama.test/up || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: mariadb:10.11
+    container_name: rama_db
+    ports:
+      - "13306:3306"
+    environment:
+      MYSQL_DATABASE: rama
+      MYSQL_ROOT_PASSWORD: p455w0rd
+    volumes:
+      - ./db/conf.d:/etc/mysql/conf.d
+      - ./db/data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
