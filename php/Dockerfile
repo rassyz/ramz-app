@@ -1,11 +1,14 @@
 FROM php:8.4.27-fpm
 
 # Environment variables
-ENV PS1="\u@\h:\w\\$ " \
+ENV PS1="\u@\h:\w\$ " \
     TZ="Asia/Jakarta" \
     COMPOSER_MEMORY_LIMIT=-1
 
 # Install system dependencies
+# NOTE: nodejs/npm are intentionally NOT installed from the distro repo here
+# (Debian ships Node 20 + npm 9, too old for the current Laravel starter kit
+# toolchain). Node.js 22 LTS is installed from NodeSource in the next step.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     $PHPIZE_DEPS \
     ca-certificates \
@@ -18,8 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping \
     telnet \
     netcat-openbsd \
-    nodejs \
-    npm \
     libmemcached-dev \
     libsasl2-dev \
     libmcrypt-dev \
@@ -36,6 +37,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagickwand-dev \
     libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22 LTS + npm (NodeSource)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && node --version && npm --version
 
 # Configure and install PHP extensions
 RUN docker-php-ext-configure gd \
@@ -94,6 +101,14 @@ RUN printf '#!/bin/sh\nexec php /var/www/html/artisan "$@"\n' > /usr/local/bin/a
     && printf '#!/bin/sh\nexec php /var/www/html/artisan migrate "$@"\n' > /usr/local/bin/migrate \
     && printf '#!/bin/sh\nexec php /var/www/html/artisan migrate:fresh --seed "$@"\n' > /usr/local/bin/fresh \
     && chmod +x /usr/local/bin/art /usr/local/bin/migrate /usr/local/bin/fresh
+
+# Canonical frontend files (plain Vite package.json + vite.config.js).
+# The starter kit ships Vite+ ("vp") files that cannot install/build in this
+# container; the entrypoint copies these canonical files over the freshly
+# created project on first run, so a clean `docker compose up -d --build`
+# needs no manual step. They live outside the web root so nothing in the
+# mounted project volume can overwrite them.
+COPY ./frontend/ /usr/local/share/ramz-frontend/
 
 # Custom entrypoint
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

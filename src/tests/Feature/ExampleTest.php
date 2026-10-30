@@ -1,9 +1,18 @@
 <?php
 
-declare(strict_types=1);
+namespace Tests\Feature;
 
-test('the application returns a successful response', function () {
-    $response = $this->get('/');
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-    $response->assertStatus(200);
-});
+class ExampleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_returns_a_successful_response(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertOk();
+    }
+}

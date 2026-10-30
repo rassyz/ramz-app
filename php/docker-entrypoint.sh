@@ -1,171 +1,118 @@
 #!/bin/bash
 set -e
 
+
 echo "🚀 Starting Laravel container setup..."
+
+CREATED_PROJECT=false
 
 # Step 1: Create Laravel project if not already present
 if [ -z "$(find /var/www/html -mindepth 1 -not -path '/var/www/html/.gitkeep' -print -quit)" ]; then
-  echo "📦 Creating Laravel project (fila-starter)..."
-  composer create-project --prefer-dist raugadh/fila-starter . --no-interaction --no-scripts
+  echo "📦 Creating Laravel project (livewire-starter-kit)..."
+  composer create-project --prefer-dist --stability=dev laravel/livewire-starter-kit . --no-interaction --no-scripts
+  CREATED_PROJECT=true
 else
   echo "✅ Laravel project already exists. Skipping create-project."
 fi
 
-# Step 2: If .env file doesn't exist, create and add necessary environment variables
-# Check if the .env file exists
-if [ ! -f /var/www/html/.env ]; then
-  echo "📄 Creating .env file with environment variables..."
-
-  # Create .env file with the required values
-  cat <<EOF > /var/www/html/.env
-APP_NAME="${PROJECT_NAME}"
-APP_ENV=local
-APP_KEY=base64:jU6xg8sp9ia37ypFlTVk1CAFx6MmeXRukO1W987uUzI=
-APP_DEBUG=true
-APP_TIMEZONE='Asia/Jakarta'
-APP_URL="https://${PROJECT_NAME}.test"
-ASSET_URL="https://${PROJECT_NAME}.test"
-DEBUGBAR_ENABLED=false
-ASSET_PREFIX=
-# ASSET_PREFIX=/dev/kit/public example in case deployed inside a folder
-
-APP_LOCALE=en
-APP_FALLBACK_LOCALE=en
-APP_FAKER_LOCALE=en_US
-
-APP_MAINTENANCE_DRIVER=file
-# APP_MAINTENANCE_STORE=database
-
-PHP_CLI_SERVER_WORKERS=4
-
-BCRYPT_ROUNDS=12
-
-LOG_CHANNEL=stack
-LOG_STACK=single
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
-
-DB_CONNECTION=mariadb
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE="${PROJECT_NAME}"
-DB_USERNAME=root
-DB_PASSWORD=p455w0rd
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-SESSION_ENCRYPT=true
-SESSION_PATH=/
-SESSION_DOMAIN=null
-
-BROADCAST_CONNECTION=log
-FILESYSTEM_DISK=local
-QUEUE_CONNECTION=database
-
-CACHE_STORE=database
-# CACHE_PREFIX=
-
-MEMCACHED_HOST=127.0.0.1
-
-REDIS_CLIENT=phpredis
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MAIL_MAILER=log
-MAIL_SCHEME=null
-MAIL_HOST=127.0.0.1
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=
-AWS_USE_PATH_STYLE_ENDPOINT=false
-
-VITE_APP_NAME="${APP_NAME}"
-EOF
-else
-  echo "📄 .env file already exists, overwriting with predefined environment variables..."
-
-  # Overwrite the existing .env file with the required values
-  cat <<EOF > /var/www/html/.env
-APP_NAME="${PROJECT_NAME}"
-APP_ENV=local
-APP_KEY=base64:jU6xg8sp9ia37ypFlTVk1CAFx6MmeXRukO1W987uUzI=
-APP_DEBUG=true
-APP_TIMEZONE='Asia/Jakarta'
-APP_URL="https://${PROJECT_NAME}.test"
-ASSET_URL="https://${PROJECT_NAME}.test"
-DEBUGBAR_ENABLED=false
-ASSET_PREFIX=
-# ASSET_PREFIX=/dev/kit/public example in case deployed inside a folder
-
-APP_LOCALE=en
-APP_FALLBACK_LOCALE=en
-APP_FAKER_LOCALE=en_US
-
-APP_MAINTENANCE_DRIVER=file
-# APP_MAINTENANCE_STORE=database
-
-PHP_CLI_SERVER_WORKERS=4
-
-BCRYPT_ROUNDS=12
-
-LOG_CHANNEL=stack
-LOG_STACK=single
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
-
-DB_CONNECTION=mariadb
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE="${PROJECT_NAME}"
-DB_USERNAME=root
-DB_PASSWORD=p455w0rd
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-SESSION_ENCRYPT=true
-SESSION_PATH=/
-SESSION_DOMAIN=null
-
-BROADCAST_CONNECTION=log
-FILESYSTEM_DISK=local
-QUEUE_CONNECTION=database
-
-CACHE_STORE=database
-# CACHE_PREFIX=
-
-MEMCACHED_HOST=127.0.0.1
-
-REDIS_CLIENT=phpredis
-REDIS_HOST=127.0.0.1
-REDIS_PASSWORD=null
-REDIS_PORT=6379
-
-MAIL_MAILER=log
-MAIL_SCHEME=null
-MAIL_HOST=127.0.0.1
-MAIL_PORT=2525
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_FROM_ADDRESS="hello@example.com"
-MAIL_FROM_NAME="${APP_NAME}"
-
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_DEFAULT_REGION=us-east-1
-AWS_BUCKET=
-AWS_USE_PATH_STYLE_ENDPOINT=false
-
-VITE_APP_NAME="${APP_NAME}"
-EOF
+# Step 1.5: On first creation only, replace the starter kit's frontend files
+# (Vite+/"vp" — its CLI is not installed via npm, so `npm run build` can never
+# work in this container) with the canonical plain-Vite files baked into the
+# image, and drop the kit's package-lock.json (it still describes the Vite+
+# dependency tree). Later manual edits to the project's frontend files are
+# left untouched because this step only runs when CREATED_PROJECT=true.
+if [ "$CREATED_PROJECT" = "true" ]; then
+  if [ -f /usr/local/share/ramz-frontend/package.json ] && [ -f /usr/local/share/ramz-frontend/vite.config.js ]; then
+    echo "🧩 Applying canonical frontend files (plain Vite)..."
+    cp /usr/local/share/ramz-frontend/package.json /var/www/html/package.json
+    cp /usr/local/share/ramz-frontend/vite.config.js /var/www/html/vite.config.js
+    rm -f /var/www/html/package-lock.json
+  else
+    echo "⚠️ Canonical frontend files not found in image, keeping starter kit files!"
+  fi
 fi
+
+# Step 2: Write .env file with the predefined environment variables.
+# The file is regenerated on every start so the values below stay the single
+# source of truth, EXCEPT APP_KEY: an existing key is preserved so sessions
+# and encrypted data survive container restarts.
+EXISTING_APP_KEY=""
+if [ -f /var/www/html/.env ]; then
+  EXISTING_APP_KEY=$(grep '^APP_KEY=' /var/www/html/.env | cut -d '=' -f2- || true)
+fi
+
+echo "📄 Writing .env file with environment variables..."
+cat <<EOF > /var/www/html/.env
+APP_NAME="${PROJECT_NAME}"
+APP_ENV=local
+APP_KEY=${EXISTING_APP_KEY}
+APP_DEBUG=true
+APP_TIMEZONE='Asia/Jakarta'
+APP_URL="https://${PROJECT_NAME}.test"
+ASSET_URL="https://${PROJECT_NAME}.test"
+DEBUGBAR_ENABLED=false
+ASSET_PREFIX=
+# ASSET_PREFIX=/dev/kit/public example in case deployed inside a folder
+
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
+
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mariadb
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE="${PROJECT_NAME}"
+DB_USERNAME=root
+DB_PASSWORD="${DB_PASSWORD:-p455w0rd}"
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=true
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
+EOF
 
 # Step 3: Wait for DB connection (host should match DB_HOST in .env)
 DB_HOST=$(grep DB_HOST /var/www/html/.env | cut -d '=' -f2)
@@ -199,28 +146,14 @@ fi
 echo "🔎 Discovering Laravel packages..."
 php artisan package:discover --ansi || true
 
-echo "🎨 Upgrading/publishing Filament assets..."
-php artisan filament:upgrade || true
-
-echo "🎨 Upgrading/publishing theme assets..."
-php artisan themes:upgrade || true
-
 echo "🎨 Building frontend assets..."
 if [ -f /var/www/html/package.json ]; then
   npm install
   npm run build
 fi
 
-# Make wkhtmltopdf available on PATH from Composer package for legacy config/task compatibility.
-WKHTML_H4CC_BIN="/var/www/html/vendor/h4cc/wkhtmltopdf-amd64/bin/wkhtmltopdf-amd64"
-if [ -f "$WKHTML_H4CC_BIN" ]; then
-  chmod +x "$WKHTML_H4CC_BIN" || true
-  ln -sf "$WKHTML_H4CC_BIN" /usr/local/bin/wkhtmltopdf
-  ln -sf /usr/local/bin/wkhtmltopdf /usr/bin/wkhtmltopdf
-fi
-
-# Step 5: Generate app key if not already present
-if [ ! -f /var/www/html/storage/oauth-private.key ]; then
+# Step 5: Generate app key if not already present in .env
+if ! grep -q '^APP_KEY=base64:' /var/www/html/.env; then
   echo "🔐 Generating Laravel app key..."
   php artisan key:generate --force
 fi
@@ -235,9 +168,14 @@ chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 echo "🗃️ Running migrations..."
 php artisan migrate --force
 
-# Step 8: Run custom project init command
-echo "🚀 Running project:init..."
-php artisan project:init || true
+# Step 8: Seed the database — only on first creation, so restarts
+# do not duplicate seed data
+if [ "$CREATED_PROJECT" = "true" ]; then
+  echo "🌱 Seeding database (first run)..."
+  php artisan db:seed --force || true
+else
+  echo "🌱 Skipping seeding (project already existed)."
+fi
 
 # Step 9: Create storage symbolic link
 echo "🔗 Creating storage link..."
