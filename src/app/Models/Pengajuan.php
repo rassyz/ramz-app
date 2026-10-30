@@ -9,6 +9,7 @@ use App\Models\Layanan;
 use App\Models\Pembayaran;
 use App\Models\RiwayatStatus;
 use App\Models\User;
+use App\Models\VerifikasiDokumen;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -118,6 +119,16 @@ class Pengajuan extends Model
     public function hasilPemeriksaanTerakhir(): HasOne
     {
         return $this->hasOne(HasilPemeriksaan::class)->latestOfMany();
+    }
+
+    /**
+     * Keputusan verifikasi operator atas pengajuan ini (Fase 4).
+     *
+     * @return HasMany<VerifikasiDokumen, $this>
+     */
+    public function verifikasiDokumens(): HasMany
+    {
+        return $this->hasMany(VerifikasiDokumen::class)->orderBy('created_at');
     }
 
     /**

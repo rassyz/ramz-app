@@ -54,4 +54,45 @@ class PengajuanPolicy
             && $pengajuan->user_id === $user->id
             && $pengajuan->status === StatusPengajuan::MenungguVerifikasi;
     }
+
+    /**
+     * Hanya Operator, dan hanya saat pengajuan menunggu verifikasi.
+     * Admin tidak memverifikasi (Tabel 3.3 dokumen patokan).
+     */
+    public function verify(User $user, Pengajuan $pengajuan): bool
+    {
+        return $user->isOperator()
+            && $pengajuan->status === StatusPengajuan::MenungguVerifikasi;
+    }
+
+    /**
+     * Operator memajukan status pengajuan yang sudah terverifikasi;
+     * kesahihan langkahnya ditegakkan VerifikasiService.
+     */
+    public function updateStatus(User $user, Pengajuan $pengajuan): bool
+    {
+        return $user->isOperator()
+            && ! in_array($pengajuan->status, [StatusPengajuan::Selesai, StatusPengajuan::Dibatalkan], true);
+    }
+
+    /**
+     * Operator mengelola status pembayaran selama pengajuan
+     * belum dibatalkan.
+     */
+    public function updatePembayaran(User $user, Pengajuan $pengajuan): bool
+    {
+        return $user->isOperator()
+            && $pengajuan->status !== StatusPengajuan::Dibatalkan;
+    }
+
+    /**
+     * Nasabah pemilik mengajukan kembali pengajuan yang sedang
+     * berstatus perlu perbaikan.
+     */
+    public function resubmit(User $user, Pengajuan $pengajuan): bool
+    {
+        return $user->isNasabah()
+            && $pengajuan->user_id === $user->id
+            && $pengajuan->status === StatusPengajuan::PerluPerbaikan;
+    }
 }

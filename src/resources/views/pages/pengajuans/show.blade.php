@@ -1,10 +1,13 @@
 <?php
 
+use App\Enums\KeputusanVerifikasi;
 use App\Enums\MataUang;
+use App\Enums\StatusPembayaran;
 use App\Enums\StatusPengajuan;
 use App\Models\Dokumen;
 use App\Models\Pengajuan;
 use App\Services\RuleBasedEvidenceChecker;
+use App\Services\VerifikasiService;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -35,6 +38,13 @@ new #[Title('Detail Pengajuan')] class extends Component
 
     public string $docJenisLayanan = '';
 
+    // Form verifikasi & pengelolaan status (Fase 4, khusus operator)
+    public string $keputusan = '';
+
+    public string $catatanVerifikasi = '';
+
+    public string $statusPembayaranBaru = '';
+
     /**
      * Akses detail ditegakkan PengajuanPolicy: staf dapat melihat
      * semua pengajuan, nasabah hanya miliknya sendiri.
@@ -43,6 +53,7 @@ new #[Title('Detail Pengajuan')] class extends Component
     {
         $this->authorize('view', $pengajuan);
         $this->pengajuan = $pengajuan->load(['user', 'layanan', 'pembayaran']);
+        $this->statusPembayaranBaru = $this->pengajuan->pembayaran?->status->value ?? '';
     }
 
     #[Computed]
@@ -81,6 +92,16 @@ new #[Title('Detail Pengajuan')] class extends Component
     {
         return $this->uploadJenis !== ''
             && str_contains(strtolower($this->uploadJenis), 'invoice');
+    }
+
+    #[Computed]
+    public function verifikasiRiwayat()
+    {
+        return $this->pengajuan->verifikasiDokumens()
+            ->with(['operator', 'hasilPemeriksaan'])
+            ->reorder()
+            ->latest()
+            ->get();
     }
 
     #[Computed]
@@ -209,6 +230,118 @@ new #[Title('Detail Pengajuan')] class extends Component
         unset($this->hasilTerakhir, $this->riwayatPemeriksaan);
     }
 
+    /**
+     * Operator menyimpan keputusan verifikasi (Fase 4).
+     */
+    public function simpanKeputusan(): void
+    {
+        $this->authorize('verify', $this->pengajuan);
+
+        $this->validate([
+            'keputusan' => ['required', Rule::enum(KeputusanVerifikasi::class)],
+            'catatanVerifikasi' => [
+                Rule::requiredIf($this->keputusan === KeputusanVerifikasi::PerluPerbaikan->value),
+                'nullable', 'string',
+            ],
+        ], [
+            'catatanVerifikasi.required' => 'Catatan wajib diisi untuk keputusan Perlu Perbaikan.',
+        ]);
+
+        try {
+            app(VerifikasiService::class)->putuskanVerifikasi(
+                $this->pengajuan,
+                auth()->user(),
+                KeputusanVerifikasi::from($this->keputusan),
+                $this->catatanVerifikasi !== '' ? $this->catatanVerifikasi : null
+            );
+        } catch (InvalidArgumentException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->pengajuan->refresh();
+        $this->reset('keputusan', 'catatanVerifikasi');
+        unset($this->riwayat, $this->verifikasiRiwayat, $this->dapatKelolaDokumen);
+
+        Flux::toast(variant: 'success', text: 'Keputusan verifikasi berhasil disimpan.');
+    }
+
+    /**
+     * Operator memajukan status: terverifikasi -> diproses -> selesai.
+     */
+    public function majukanStatus(string $status): void
+    {
+        $this->authorize('updateStatus', $this->pengajuan);
+
+        try {
+            app(VerifikasiService::class)->ubahStatus(
+                $this->pengajuan,
+                auth()->user(),
+                StatusPengajuan::from($status)
+            );
+        } catch (InvalidArgumentException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->pengajuan->refresh();
+        unset($this->riwayat, $this->dapatKelolaDokumen);
+
+        Flux::toast(variant: 'success', text: 'Status pengajuan berhasil diperbarui.');
+    }
+
+    /**
+     * Operator menyimpan status pembayaran baru.
+     */
+    public function simpanStatusPembayaran(): void
+    {
+        $this->authorize('updatePembayaran', $this->pengajuan);
+
+        $this->validate([
+            'statusPembayaranBaru' => ['required', Rule::enum(StatusPembayaran::class)],
+        ]);
+
+        try {
+            app(VerifikasiService::class)->ubahStatusPembayaran(
+                $this->pengajuan,
+                auth()->user(),
+                StatusPembayaran::from($this->statusPembayaranBaru)
+            );
+        } catch (InvalidArgumentException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->pengajuan->refresh()->load('pembayaran.diubahOleh');
+        unset($this->riwayat);
+
+        Flux::toast(variant: 'success', text: 'Status pembayaran berhasil diperbarui.');
+    }
+
+    /**
+     * Nasabah mengajukan kembali pengajuan yang perlu perbaikan.
+     */
+    public function ajukanKembali(): void
+    {
+        $this->authorize('resubmit', $this->pengajuan);
+
+        try {
+            app(VerifikasiService::class)->ajukanKembali($this->pengajuan, auth()->user());
+        } catch (InvalidArgumentException $e) {
+            Flux::toast(variant: 'danger', text: $e->getMessage());
+
+            return;
+        }
+
+        $this->pengajuan->refresh();
+        unset($this->riwayat, $this->dapatKelolaDokumen);
+
+        Flux::toast(variant: 'success', text: 'Pengajuan berhasil diajukan kembali dan menunggu verifikasi operator.');
+    }
+
     public function batalkan(): void
     {
         $this->authorize('cancel', $this->pengajuan);
@@ -255,6 +388,19 @@ new #[Title('Detail Pengajuan')] class extends Component
     <flux:button size="sm" class="mt-4" :href="auth()->user()->isNasabah() ? route('nasabah.pengajuan') : route('pengajuans.index')">&larr; Kembali</flux:button>
 
     <flux:separator class="mt-4 mb-6" />
+
+    @if (auth()->user()->isNasabah() && $pengajuan->status === \App\Enums\StatusPengajuan::PerluPerbaikan)
+        <div class="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+            <flux:heading level="2">Pengajuan Dikembalikan untuk Perbaikan</flux:heading>
+            @if ($pengajuan->catatan)
+                <flux:text class="mt-2 block">Catatan operator: {{ $pengajuan->catatan }}</flux:text>
+            @endif
+            <flux:text class="mt-2 block">Perbaiki dokumen pada bagian Dokumen Pendukung di bawah, lalu ajukan kembali pengajuan ini.</flux:text>
+            @can('resubmit', $pengajuan)
+                <flux:button variant="primary" class="mt-3" wire:click="ajukanKembali" wire:confirm="Ajukan kembali pengajuan ini untuk diverifikasi ulang?">Ajukan Kembali</flux:button>
+            @endcan
+        </div>
+    @endif
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="space-y-6">
@@ -311,6 +457,9 @@ new #[Title('Detail Pengajuan')] class extends Component
                             </flux:table.row>
                         </flux:table.rows>
                     </flux:table>
+                    @if ($pengajuan->pembayaran->diubah_oleh)
+                        <flux:text size="sm" class="mt-2 block">Terakhir diubah oleh {{ $pengajuan->pembayaran->diubahOleh?->name ?? '-' }} pada {{ $pengajuan->pembayaran->updated_at->format('d M Y H:i') }}</flux:text>
+                    @endif
                 @else
                     <flux:text class="mt-3 block">Belum ada data pembayaran terhubung.</flux:text>
                 @endif
@@ -340,8 +489,98 @@ new #[Title('Detail Pengajuan')] class extends Component
                     <flux:text>Belum ada riwayat status.</flux:text>
                 @endforelse
             </div>
+
+            <flux:heading level="2" class="mt-8">Riwayat Verifikasi</flux:heading>
+            <div class="mt-4 space-y-4">
+                @forelse ($this->verifikasiRiwayat as $verifikasi)
+                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <flux:badge :color="$verifikasi->keputusan->color()">{{ $verifikasi->keputusan->label() }}</flux:badge>
+                        </div>
+                        <flux:text size="sm" class="mt-2 block">
+                            {{ $verifikasi->created_at->format('d M Y H:i') }} — oleh {{ $verifikasi->operator->name }}
+                            @if ($verifikasi->hasilPemeriksaan)
+                                — acuan pemeriksaan: {{ $verifikasi->hasilPemeriksaan->status->label() }}
+                            @endif
+                        </flux:text>
+                        @if ($verifikasi->catatan)
+                            <flux:text size="sm" class="mt-1 block">{{ $verifikasi->catatan }}</flux:text>
+                        @endif
+                    </div>
+                @empty
+                    <flux:text>Belum ada keputusan verifikasi.</flux:text>
+                @endforelse
+            </div>
         </div>
     </div>
+
+    @if (auth()->user()->isOperator())
+        <flux:separator class="my-8" />
+
+        <div>
+            <flux:heading level="2">Verifikasi & Pengelolaan — Operator</flux:heading>
+            <flux:subheading>Keputusan dan pengelolaan status hanya dapat dilakukan oleh operator.</flux:subheading>
+
+            <div class="mt-4 grid gap-6 lg:grid-cols-2">
+                @can('verify', $pengajuan)
+                    <form wire:submit="simpanKeputusan" class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                        <flux:heading level="3">Keputusan Verifikasi</flux:heading>
+
+                        @if ($this->hasilTerakhir)
+                            <flux:text>Acuan hasil pemeriksaan terakhir: <flux:badge :color="$this->hasilTerakhir->status->color()">{{ $this->hasilTerakhir->status->label() }}</flux:badge> ({{ $this->hasilTerakhir->created_at->format('d M Y H:i') }})</flux:text>
+                        @else
+                            <flux:text>Perhatian: checker belum pernah berjalan untuk pengajuan ini. Keputusan tetap dapat diambil berdasarkan pemeriksaan dokumen secara langsung.</flux:text>
+                        @endif
+
+                        <flux:radio.group wire:model="keputusan" label="Keputusan" required>
+                            <flux:radio value="terverifikasi" label="Terverifikasi" />
+                            <flux:radio value="perlu_perbaikan" label="Perlu Perbaikan" />
+                        </flux:radio.group>
+
+                        <flux:textarea wire:model="catatanVerifikasi" label="Catatan (wajib untuk Perlu Perbaikan)" rows="3" />
+                        @error('catatanVerifikasi')
+                            <flux:text class="text-red-500">{{ $message }}</flux:text>
+                        @enderror
+
+                        <flux:button variant="primary" type="submit">Simpan Keputusan</flux:button>
+                    </form>
+                @endcan
+
+                <div class="space-y-6">
+                    @can('updateStatus', $pengajuan)
+                        @if ($pengajuan->status === \App\Enums\StatusPengajuan::Terverifikasi)
+                            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <flux:heading level="3">Kelola Status</flux:heading>
+                                <flux:text class="mt-2 block">Pengajuan sudah terverifikasi dan dapat mulai diproses.</flux:text>
+                                <flux:button variant="primary" class="mt-3" wire:click="majukanStatus('diproses')" wire:confirm="Ubah status menjadi Diproses?">Mulai Diproses</flux:button>
+                            </div>
+                        @elseif ($pengajuan->status === \App\Enums\StatusPengajuan::Diproses)
+                            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <flux:heading level="3">Kelola Status</flux:heading>
+                                <flux:text class="mt-2 block">Pengajuan sedang diproses dan dapat ditandai selesai.</flux:text>
+                                <flux:button variant="primary" class="mt-3" wire:click="majukanStatus('selesai')" wire:confirm="Tandai pengajuan ini sebagai Selesai?">Tandai Selesai</flux:button>
+                            </div>
+                        @endif
+                    @endcan
+
+                    @can('updatePembayaran', $pengajuan)
+                        @if ($pengajuan->pembayaran)
+                            <form wire:submit="simpanStatusPembayaran" class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                                <flux:heading level="3">Status Pembayaran</flux:heading>
+                                <flux:select wire:model="statusPembayaranBaru" label="Status Pembayaran" required>
+                                    @foreach (\App\Enums\StatusPembayaran::cases() as $statusPembayaran)
+                                        <option value="{{ $statusPembayaran->value }}">{{ $statusPembayaran->label() }}</option>
+                                    @endforeach
+                                </flux:select>
+                                <flux:text size="sm">Status hanya dapat berpindah satu langkah dari status saat ini ({{ $pengajuan->pembayaran->status->label() }}).</flux:text>
+                                <flux:button variant="primary" type="submit">Simpan Status Pembayaran</flux:button>
+                            </form>
+                        @endif
+                    @endcan
+                </div>
+            </div>
+        </div>
+    @endif
 
     <flux:separator class="my-8" />
 
