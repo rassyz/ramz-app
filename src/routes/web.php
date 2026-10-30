@@ -9,6 +9,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard monitoring dinamis + personalisasi (KF-09/KF-10, Fase 5).
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
 
+    // Kotak masuk notifikasi (KF-11, Fase 6).
+    Route::livewire('notifikasi', 'pages::notifikasis.index')->name('notifikasis.index');
+
     // Khusus Admin: pengelolaan pengguna dan hak akses (KF-02).
     Route::livewire('admin/users', 'pages::admin.users')
         ->middleware('role:admin')

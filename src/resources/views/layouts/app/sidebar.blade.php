@@ -7,6 +7,13 @@
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+                <flux:sidebar.item icon="bell" :href="route('notifikasis.index')" :current="request()->routeIs('notifikasis.*')" wire:navigate>
+                    Notifikasi
+                    @php($belumDibaca = auth()->user()->notifikasis()->whereNull('dibaca_at')->count())
+                    @if ($belumDibaca > 0)
+                        <flux:badge size="sm" color="red">{{ $belumDibaca }}</flux:badge>
+                    @endif
+                </flux:sidebar.item>
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
@@ -25,12 +32,6 @@
                     @if (auth()->user()->isAdmin())
                         <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.layanans')" :current="request()->routeIs('admin.layanans')" wire:navigate>
                             {{ __('Master Layanan') }}
-                        </flux:sidebar.item>
-                    @endif
-
-                    @if (auth()->user()->isAdmin())
-                        <flux:sidebar.item icon="shield-check" :href="route('admin.aturan-validasi')" :current="request()->routeIs('admin.aturan-validasi')" wire:navigate>
-                            {{ __('Aturan Validasi') }}
                         </flux:sidebar.item>
                     @endif
 

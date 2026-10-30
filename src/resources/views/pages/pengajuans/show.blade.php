@@ -6,6 +6,7 @@ use App\Enums\StatusPembayaran;
 use App\Enums\StatusPengajuan;
 use App\Models\Dokumen;
 use App\Models\Pengajuan;
+use App\Services\NotifikasiService;
 use App\Services\RuleBasedEvidenceChecker;
 use App\Services\VerifikasiService;
 use Flux\Flux;
@@ -364,6 +365,8 @@ new #[Title('Detail Pengajuan')] class extends Component
 
         $this->pengajuan->refresh();
         unset($this->riwayat);
+
+        app(NotifikasiService::class)->statusBerubah($this->pengajuan);
 
         Flux::toast(variant: 'success', text: 'Pengajuan berhasil dibatalkan.');
     }

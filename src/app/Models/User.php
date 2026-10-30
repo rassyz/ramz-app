@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Models\Notifikasi;
 use App\Models\Pengajuan;
 use App\Models\PreferensiDashboard;
+use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -23,6 +25,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $nomor_hp
  * @property UserRole $role
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -33,11 +36,11 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'nomor_hp', 'password', 'role'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
@@ -108,6 +111,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
      | Preferensi dashboard (Fase 5)
      |--------------------------------------------------------------------------
      */
+
+    /**
+     * Notifikasi milik pengguna ini sebagai penerima (KF-11).
+     *
+     * @return HasMany<Notifikasi, $this>
+     */
+    public function notifikasis(): HasMany
+    {
+        return $this->hasMany(Notifikasi::class);
+    }
 
     /**
      * Preferensi personalisasi dashboard tersimpan milik pengguna ini.

@@ -4,6 +4,7 @@ use App\Enums\MataUang;
 use App\Enums\StatusPengajuan;
 use App\Models\Layanan;
 use App\Models\Pengajuan;
+use App\Services\NotifikasiService;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -89,6 +90,8 @@ new #[Title('Pengajuan Saya')] class extends Component
                 'changed_by' => auth()->id(),
             ]);
         });
+
+        app(NotifikasiService::class)->pengajuanDibuat($pengajuan);
 
         Flux::toast(variant: 'success', text: 'Pengajuan '.$pengajuan->nomor_pengajuan.' berhasil dibuat. Unggah dokumen pendukung akan tersedia pada tahap berikutnya.');
 
