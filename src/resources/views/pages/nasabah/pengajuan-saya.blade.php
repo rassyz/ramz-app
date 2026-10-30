@@ -4,6 +4,8 @@ use App\Enums\MataUang;
 use App\Enums\StatusPengajuan;
 use App\Models\Layanan;
 use App\Models\Pengajuan;
+use App\Models\LogAktivitas;
+use App\Services\LogAktivitasService;
 use App\Services\NotifikasiService;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +94,13 @@ new #[Title('Pengajuan Saya')] class extends Component
         });
 
         app(NotifikasiService::class)->pengajuanDibuat($pengajuan);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PENGAJUAN_DIBUAT,
+            'Nasabah '.auth()->user()->name." membuat pengajuan {$pengajuan->nomor_pengajuan}.",
+            auth()->user(),
+            $pengajuan
+        );
 
         Flux::toast(variant: 'success', text: 'Pengajuan '.$pengajuan->nomor_pengajuan.' berhasil dibuat. Unggah dokumen pendukung akan tersedia pada tahap berikutnya.');
 

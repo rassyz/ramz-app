@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\UserRole;
+use App\Models\LogAktivitas;
 use App\Models\User;
+use App\Services\LogAktivitasService;
 use Flux\Flux;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -63,7 +65,7 @@ new #[Title('Kelola Pengguna')] class extends Component
             'role' => ['required', Rule::enum(UserRole::class)],
         ]);
 
-        User::create([
+        $penggunaBaru = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'nomor_hp' => $validated['nomorHp'] ?: null,
@@ -72,6 +74,12 @@ new #[Title('Kelola Pengguna')] class extends Component
             // Akun yang dibuat Admin langsung terverifikasi.
             'email_verified_at' => now(),
         ]);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PENGGUNA_DIBUAT,
+            'Admin '.auth()->user()->name." membuat pengguna {$penggunaBaru->name} ({$penggunaBaru->email}) dengan peran {$penggunaBaru->role->label()}.",
+            auth()->user()
+        );
 
         $this->reset('name', 'email', 'password', 'role', 'nomorHp');
         $this->role = 'nasabah';
@@ -129,6 +137,12 @@ new #[Title('Kelola Pengguna')] class extends Component
             'role' => UserRole::from($validated['editRole']),
         ]);
 
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PENGGUNA_DIUBAH,
+            'Admin '.auth()->user()->name." mengubah pengguna {$user->name} ({$user->email}).",
+            auth()->user()
+        );
+
         $this->cancelEdit();
 
         Flux::toast(variant: 'success', text: 'Pengguna berhasil diperbarui.');
@@ -139,6 +153,12 @@ new #[Title('Kelola Pengguna')] class extends Component
         $user = User::findOrFail($id);
 
         $this->authorize('delete', $user);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PENGGUNA_DIHAPUS,
+            'Admin '.auth()->user()->name." menghapus pengguna {$user->name} ({$user->email}).",
+            auth()->user()
+        );
 
         $user->delete();
 

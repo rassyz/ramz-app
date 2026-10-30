@@ -6,6 +6,8 @@ use App\Enums\StatusPembayaran;
 use App\Enums\StatusPengajuan;
 use App\Models\Dokumen;
 use App\Models\Pengajuan;
+use App\Models\LogAktivitas;
+use App\Services\LogAktivitasService;
 use App\Services\NotifikasiService;
 use App\Services\RuleBasedEvidenceChecker;
 use App\Services\VerifikasiService;
@@ -61,6 +63,22 @@ new #[Title('Detail Pengajuan')] class extends Component
     public function riwayat()
     {
         return $this->pengajuan->riwayatStatuses()->with('diubahOleh')->get();
+    }
+
+    /**
+     * Riwayat lengkap perubahan status pembayaran, dibaca dari log
+     * aktivitas (KF-14, Fase 7) — pelunasan akuntabilitas dua lapis
+     * yang disepakati pada Fase 4.
+     */
+    #[Computed]
+    public function riwayatPembayaran()
+    {
+        return LogAktivitas::query()
+            ->with('user')
+            ->where('pengajuan_id', $this->pengajuan->id)
+            ->where('aktivitas', LogAktivitas::PEMBAYARAN_STATUS_BERUBAH)
+            ->oldest('id')
+            ->get();
     }
 
     #[Computed]
@@ -194,6 +212,14 @@ new #[Title('Detail Pengajuan')] class extends Component
         // Checker berjalan otomatis setelah dokumen berubah (alur To-Be).
         app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
 
+        app(LogAktivitasService::class)->catat(
+            $existing ? LogAktivitas::DOKUMEN_DIGANTI : LogAktivitas::DOKUMEN_DIUNGGAH,
+            auth()->user()->name.' '.($existing ? 'mengganti' : 'mengunggah')." dokumen {$this->uploadJenis} pada pengajuan {$this->pengajuan->nomor_pengajuan}.",
+            auth()->user(),
+            $this->pengajuan,
+            ['jenis_dokumen' => $this->uploadJenis]
+        );
+
         Flux::toast(variant: 'success', text: 'Dokumen '.$this->uploadJenis.' berhasil diunggah dan pemeriksaan otomatis telah dijalankan.');
 
         $this->reset('uploadJenis', 'uploadFile', 'docNomorInvoice', 'docIdentitas', 'docNominal', 'docJenisLayanan');
@@ -207,10 +233,20 @@ new #[Title('Detail Pengajuan')] class extends Component
 
         $this->authorize('delete', $dokumen);
 
+        $jenisDokumen = $dokumen->jenis_dokumen;
+
         Storage::disk('local')->delete($dokumen->path_file);
         $dokumen->delete();
 
         app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::DOKUMEN_DIHAPUS,
+            auth()->user()->name." menghapus dokumen {$jenisDokumen} pada pengajuan {$this->pengajuan->nomor_pengajuan}.",
+            auth()->user(),
+            $this->pengajuan,
+            ['jenis_dokumen' => $jenisDokumen]
+        );
 
         Flux::toast(variant: 'success', text: 'Dokumen berhasil dihapus dan pemeriksaan otomatis telah dijalankan.');
 
@@ -225,6 +261,14 @@ new #[Title('Detail Pengajuan')] class extends Component
         abort_unless(auth()->user()->isAdmin() || auth()->user()->isOperator(), 403);
 
         $hasil = app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PEMERIKSAAN_DIJALANKAN,
+            auth()->user()->name." menjalankan pemeriksaan manual pada pengajuan {$this->pengajuan->nomor_pengajuan} dengan hasil {$hasil->status->label()}.",
+            auth()->user(),
+            $this->pengajuan,
+            ['hasil' => $hasil->status->value, 'sesuai' => $hasil->total_sesuai, 'total' => $hasil->total_pemeriksaan]
+        );
 
         Flux::toast(variant: 'success', text: 'Pemeriksaan selesai: '.$hasil->status->label().' ('.$hasil->total_sesuai.' dari '.$hasil->total_pemeriksaan.' pemeriksaan sesuai).');
 
@@ -368,6 +412,13 @@ new #[Title('Detail Pengajuan')] class extends Component
 
         app(NotifikasiService::class)->statusBerubah($this->pengajuan);
 
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::PENGAJUAN_DIBATALKAN,
+            'Nasabah '.auth()->user()->name." membatalkan pengajuan {$this->pengajuan->nomor_pengajuan}.",
+            auth()->user(),
+            $this->pengajuan
+        );
+
         Flux::toast(variant: 'success', text: 'Pengajuan berhasil dibatalkan.');
     }
 }; ?>
@@ -468,6 +519,26 @@ new #[Title('Detail Pengajuan')] class extends Component
                 @endif
             </div>
         </div>
+
+        @if ($this->riwayatPembayaran->isNotEmpty())
+            <div>
+                <flux:heading level="2">Riwayat Status Pembayaran</flux:heading>
+                <div class="mt-4 space-y-4">
+                    @foreach ($this->riwayatPembayaran as $log)
+                        <div class="border-l-2 border-zinc-300 pl-4 dark:border-zinc-600">
+                            <flux:text>
+                                {{ \App\Enums\StatusPembayaran::tryFrom($log->konteks['status_dari'] ?? '')?->label() ?? '-' }}
+                                &rarr;
+                                {{ \App\Enums\StatusPembayaran::tryFrom($log->konteks['status_ke'] ?? '')?->label() ?? '-' }}
+                            </flux:text>
+                            <flux:text size="sm" class="block">
+                                {{ $log->created_at->format('d M Y H:i') }} — oleh {{ $log->user?->name ?? 'Sistem' }} (Log Aktivitas, KF-14)
+                            </flux:text>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
 
         <div>
             <flux:heading level="2">Riwayat Status</flux:heading>

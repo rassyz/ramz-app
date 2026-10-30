@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Models\LogAktivitas;
 use App\Models\Notifikasi;
 use App\Models\Pengajuan;
 use App\Models\PreferensiDashboard;
@@ -120,6 +121,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function notifikasis(): HasMany
     {
         return $this->hasMany(Notifikasi::class);
+    }
+
+    /**
+     * Catatan log aktivitas dengan pengguna ini sebagai pelaku (KF-14).
+     *
+     * @return HasMany<LogAktivitas, $this>
+     */
+    public function logAktivitas(): HasMany
+    {
+        return $this->hasMany(LogAktivitas::class);
     }
 
     /**

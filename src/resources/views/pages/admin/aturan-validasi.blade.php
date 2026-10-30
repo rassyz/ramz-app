@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\AturanValidasi;
+use App\Models\LogAktivitas;
+use App\Services\LogAktivitasService;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -30,6 +32,14 @@ new #[Title('Aturan Validasi')] class extends Component
     {
         $aturan = AturanValidasi::findOrFail($id);
         $aturan->update(['is_active' => ! $aturan->is_active]);
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::ATURAN_VALIDASI_DIUBAH,
+            'Admin '.auth()->user()->name." mengubah aturan {$aturan->kode} menjadi ".($aturan->is_active ? 'aktif' : 'nonaktif').'.',
+            auth()->user(),
+            null,
+            ['kode_aturan' => $aturan->kode, 'is_active' => $aturan->is_active]
+        );
 
         unset($this->aturan);
 

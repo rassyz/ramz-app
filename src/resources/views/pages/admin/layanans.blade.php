@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Layanan;
+use App\Models\LogAktivitas;
+use App\Services\LogAktivitasService;
 use Flux\Flux;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
@@ -100,9 +102,23 @@ new #[Title('Master Layanan')] class extends Component
 
         if ($this->editingId) {
             Layanan::findOrFail($this->editingId)->update($data);
+
+            app(LogAktivitasService::class)->catat(
+                LogAktivitas::LAYANAN_DIUBAH,
+                'Admin '.auth()->user()->name." mengubah layanan {$data['nama']} ({$data['kode']}).",
+                auth()->user()
+            );
+
             Flux::toast(variant: 'success', text: 'Layanan berhasil diperbarui.');
         } else {
             Layanan::create($data);
+
+            app(LogAktivitasService::class)->catat(
+                LogAktivitas::LAYANAN_DIBUAT,
+                'Admin '.auth()->user()->name." membuat layanan {$data['nama']} ({$data['kode']}).",
+                auth()->user()
+            );
+
             Flux::toast(variant: 'success', text: 'Layanan berhasil ditambahkan.');
         }
 
@@ -138,6 +154,12 @@ new #[Title('Master Layanan')] class extends Component
 
             return;
         }
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::LAYANAN_DIHAPUS,
+            'Admin '.auth()->user()->name." menghapus layanan {$layanan->nama} ({$layanan->kode}).",
+            auth()->user()
+        );
 
         $layanan->delete();
 

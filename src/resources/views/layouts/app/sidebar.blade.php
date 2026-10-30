@@ -27,6 +27,8 @@
                         <flux:sidebar.item icon="users" :href="route('admin.users')" :current="request()->routeIs('admin.users')" wire:navigate>
                             {{ __('Kelola Pengguna') }}
                         </flux:sidebar.item>
+                <flux:sidebar.item icon="chart-bar" :href="route('admin.laporan')" :current="request()->routeIs('admin.laporan')" wire:navigate>Laporan</flux:sidebar.item>
+                <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.log-aktivitas')" :current="request()->routeIs('admin.log-aktivitas')" wire:navigate>Log Aktivitas</flux:sidebar.item>
                     @endif
 
                     @if (auth()->user()->isAdmin())

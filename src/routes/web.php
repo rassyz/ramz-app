@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -11,6 +12,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Kotak masuk notifikasi (KF-11, Fase 6).
     Route::livewire('notifikasi', 'pages::notifikasis.index')->name('notifikasis.index');
+
+    // Laporan (KF-13) dan Log Aktivitas (KF-14) — khusus Admin (Fase 7).
+    Route::middleware('role:admin')->group(function () {
+        Route::livewire('admin/laporan', 'pages::admin.laporan')->name('admin.laporan');
+        Route::livewire('admin/log-aktivitas', 'pages::admin.log-aktivitas')->name('admin.log-aktivitas');
+        Route::get('admin/laporan/unduh', LaporanController::class)->name('admin.laporan.unduh');
+    });
 
     // Khusus Admin: pengelolaan pengguna dan hak akses (KF-02).
     Route::livewire('admin/users', 'pages::admin.users')

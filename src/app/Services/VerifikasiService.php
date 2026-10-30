@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\KeputusanVerifikasi;
 use App\Enums\StatusPembayaran;
 use App\Enums\StatusPengajuan;
+use App\Models\LogAktivitas;
 use App\Models\Pengajuan;
 use App\Models\User;
 use App\Models\VerifikasiDokumen;
@@ -33,6 +34,15 @@ use InvalidArgumentException;
 class VerifikasiService
 {
     /**
+     * Notifikasi (KF-11) dipicu dari titik terpusat ini (Fase 6):
+     * setiap keputusan dan perubahan status yang melewati service
+     * ini otomatis menghasilkan pemberitahuan untuk penerimanya.
+     */
+    public function __construct(
+        private NotifikasiService $notifikasi,
+        private LogAktivitasService $log,
+    ) {}
+    /**
      * Mencatat keputusan verifikasi operator dan memindahkan status
      * pengajuan sesuai keputusan, dalam satu transaksi.
      */
@@ -52,7 +62,7 @@ class VerifikasiService
             throw new InvalidArgumentException('Catatan wajib diisi untuk keputusan Perlu Perbaikan, agar nasabah mengetahui yang harus diperbaiki.');
         }
 
-        return DB::transaction(function () use ($pengajuan, $operator, $keputusan, $catatan) {
+        $verifikasi = DB::transaction(function () use ($pengajuan, $operator, $keputusan, $catatan) {
             $verifikasi = VerifikasiDokumen::create([
                 'pengajuan_id' => $pengajuan->id,
                 'operator_id' => $operator->id,
@@ -70,6 +80,18 @@ class VerifikasiService
 
             return $verifikasi;
         });
+
+        $this->notifikasi->keputusanVerifikasi($pengajuan, $verifikasi);
+
+        $this->log->catat(
+            LogAktivitas::VERIFIKASI_KEPUTUSAN,
+            "Operator {$operator->name} memutuskan {$keputusan->label()} untuk pengajuan {$pengajuan->nomor_pengajuan}.",
+            $operator,
+            $pengajuan,
+            ['keputusan' => $keputusan->value, 'catatan' => $catatan]
+        );
+
+        return $verifikasi;
     }
 
     /**
@@ -90,6 +112,15 @@ class VerifikasiService
                 'Pengajuan diajukan kembali oleh nasabah setelah perbaikan.'
             );
         });
+
+        $this->notifikasi->diajukanKembali($pengajuan);
+
+        $this->log->catat(
+            LogAktivitas::PENGAJUAN_DIAJUKAN_KEMBALI,
+            "Nasabah {$nasabah->name} mengajukan kembali pengajuan {$pengajuan->nomor_pengajuan} setelah perbaikan.",
+            $nasabah,
+            $pengajuan
+        );
     }
 
     /**
@@ -103,6 +134,8 @@ class VerifikasiService
             StatusPengajuan::Diproses->value => [StatusPengajuan::Selesai],
         ];
 
+        $statusLama = $pengajuan->status;
+
         $diizinkan = $transisiSah[$pengajuan->status->value] ?? [];
 
         if (! in_array($statusBaru, $diizinkan, true)) {
@@ -114,6 +147,16 @@ class VerifikasiService
         DB::transaction(function () use ($pengajuan, $operator, $statusBaru) {
             $this->pindahkanStatus($pengajuan, $statusBaru, $operator, null);
         });
+
+        $this->notifikasi->statusBerubah($pengajuan);
+
+        $this->log->catat(
+            LogAktivitas::PENGAJUAN_STATUS_BERUBAH,
+            "Operator {$operator->name} mengubah status pengajuan {$pengajuan->nomor_pengajuan} dari {$statusLama->label()} menjadi {$statusBaru->label()}.",
+            $operator,
+            $pengajuan,
+            ['status_dari' => $statusLama->value, 'status_ke' => $statusBaru->value]
+        );
     }
 
     /**
@@ -129,6 +172,7 @@ class VerifikasiService
         }
 
         $pembayaran = $pengajuan->pembayaran;
+        $statusPembayaranLama = $pembayaran?->status;
 
         if ($pembayaran === null) {
             throw new InvalidArgumentException('Pengajuan ini tidak memiliki data pembayaran.');
@@ -150,6 +194,16 @@ class VerifikasiService
             'status' => $statusBaru,
             'diubah_oleh' => $operator->id,
         ]);
+
+        $this->notifikasi->pembayaranBerubah($pengajuan);
+
+        $this->log->catat(
+            LogAktivitas::PEMBAYARAN_STATUS_BERUBAH,
+            "Operator {$operator->name} mengubah status pembayaran pengajuan {$pengajuan->nomor_pengajuan} dari {$statusPembayaranLama?->label()} menjadi {$statusBaru->label()}.",
+            $operator,
+            $pengajuan,
+            ['status_dari' => $statusPembayaranLama?->value, 'status_ke' => $statusBaru->value]
+        );
     }
 
     /**
