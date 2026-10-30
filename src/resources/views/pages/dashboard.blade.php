@@ -185,40 +185,42 @@ new #[Title('Dashboard')] class extends Component
 
 <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
     {{-- Baris judul ala referensi: judul besar + tanggal, lonceng notifikasi, filter, personalisasi --}}
-    <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-            <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Dashboard</h1>
-            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-                {{ now()->translatedFormat('l, d F Y') }} · Selamat datang, {{ auth()->user()->name }}
-                <flux:badge color="blue" class="ml-1">{{ auth()->user()->role->label() }}</flux:badge>
-            </p>
-        </div>
-
-        <div class="flex flex-wrap items-end gap-2">
-            <a href="{{ route('notifikasis.index') }}" class="relative mb-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-zinc-600 shadow-sm hover:text-[#4353ff] dark:bg-zinc-900 dark:text-zinc-300" wire:navigate title="Notifikasi">
+    <div class="flex flex-col gap-4">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl dark:text-white">Dashboard</h1>
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                    {{ now()->translatedFormat('l, d F Y') }} · Selamat datang, {{ auth()->user()->name }}
+                    <flux:badge color="blue" class="ml-1">{{ auth()->user()->role->label() }}</flux:badge>
+                </p>
+            </div>
+            <a href="{{ route('notifikasis.index') }}" class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-zinc-600 shadow-sm hover:text-[#4353ff] dark:bg-zinc-900 dark:text-zinc-300" wire:navigate title="Notifikasi">
                 <flux:icon name="bell" class="size-5" />
                 @if ($this->jumlahBelumDibaca > 0)
                     <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-semibold text-white">{{ $this->jumlahBelumDibaca }}</span>
                 @endif
             </a>
+        </div>
+
+        <div class="grid grid-cols-2 items-end gap-2 md:flex md:flex-wrap">
             <flux:select wire:model.live="periode" label="Periode">
                 @foreach (PeriodeDashboard::cases() as $preset)
                     <option value="{{ $preset->value }}">{{ $preset->label() }}</option>
                 @endforeach
                 <option value="khusus">Rentang Khusus</option>
             </flux:select>
+            <flux:button wire:click="$toggle('panelPersonalisasi')" class="mb-0.5">Personalisasi</flux:button>
             @if ($periode === 'khusus')
                 <flux:input wire:model.live="tanggalMulai" type="date" label="Mulai" />
                 <flux:input wire:model.live="tanggalSelesai" type="date" label="Selesai" />
             @endif
-            <flux:button wire:click="$toggle('panelPersonalisasi')">Personalisasi</flux:button>
         </div>
     </div>
 
     @if ($panelPersonalisasi)
         <form wire:submit="simpanPersonalisasi" class="space-y-4 rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-zinc-900">
             <flux:heading level="2">Personalisasi Dashboard</flux:heading>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:checkbox wire:model="tampilkanTren" label="Grafik Tren Pengajuan" />
                 <flux:checkbox wire:model="tampilkanDistribusiStatus" label="Distribusi Status" />
                 <flux:checkbox wire:model="tampilkanPerLayanan" label="Pengajuan per Layanan" />
@@ -247,13 +249,13 @@ new #[Title('Dashboard')] class extends Component
     @endif
 
     {{-- Kartu KPI: kartu pertama biru solid ala referensi, badge delta dari periode sebelumnya --}}
-    <div class="grid auto-rows-min gap-4 md:grid-cols-4">
-        <div class="rounded-3xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)]">
+    <div class="grid auto-rows-min grid-cols-2 gap-4 md:grid-cols-4">
+        <div class="col-span-2 rounded-3xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-5 text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] md:col-span-1 md:p-6">
             <div class="flex items-start justify-between">
                 <p class="text-sm text-white/75">{{ auth()->user()->isNasabah() ? 'Total Pengajuan Saya' : 'Total Pengajuan' }}</p>
                 <flux:icon name="document-text" class="size-5 text-white/75" />
             </div>
-            <p class="mt-2 text-4xl font-bold">{{ $this->ringkasan['total'] }}</p>
+            <p class="mt-2 text-3xl font-bold md:text-4xl">{{ $this->ringkasan['total'] }}</p>
             @if ($this->delta['total']['persen'] !== null)
                 <span class="mt-3 inline-block rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium">
                     {{ $this->delta['total']['persen'] >= 0 ? '+' : '' }}{{ $this->delta['total']['persen'] }}% dari periode sebelumnya
@@ -263,12 +265,12 @@ new #[Title('Dashboard')] class extends Component
             @endif
         </div>
 
-        <div class="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-zinc-900">
+        <div class="rounded-3xl bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:p-6 dark:bg-zinc-900">
             <div class="flex items-start justify-between">
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">Menunggu Verifikasi</p>
                 <flux:icon name="clock" class="size-5 text-zinc-400" />
             </div>
-            <p class="mt-2 text-4xl font-bold text-zinc-900 dark:text-white">{{ $this->ringkasan['menunggu_verifikasi'] }}</p>
+            <p class="mt-2 text-3xl font-bold text-zinc-900 md:text-4xl dark:text-white">{{ $this->ringkasan['menunggu_verifikasi'] }}</p>
             <p class="mt-3 text-xs text-zinc-400">{{ auth()->user()->isNasabah() ? 'Pengajuan Anda yang sedang antre' : 'Antrean yang menunggu operator' }}</p>
         </div>
 
@@ -277,7 +279,7 @@ new #[Title('Dashboard')] class extends Component
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ auth()->user()->isNasabah() ? 'Perlu Perbaikan' : 'Selesai' }}</p>
                 <flux:icon name="{{ auth()->user()->isNasabah() ? 'exclamation-circle' : 'check-circle' }}" class="size-5 text-zinc-400" />
             </div>
-            <p class="mt-2 text-4xl font-bold text-zinc-900 dark:text-white">{{ auth()->user()->isNasabah() ? $this->ringkasan['perlu_perbaikan'] : $this->ringkasan['selesai'] }}</p>
+            <p class="mt-2 text-3xl font-bold text-zinc-900 md:text-4xl dark:text-white">{{ auth()->user()->isNasabah() ? $this->ringkasan['perlu_perbaikan'] : $this->ringkasan['selesai'] }}</p>
             @unless (auth()->user()->isNasabah())
                 @if ($this->delta['selesai']['persen'] !== null)
                     <span class="mt-3 inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $this->delta['selesai']['persen'] >= 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400' }}">
@@ -289,7 +291,7 @@ new #[Title('Dashboard')] class extends Component
             @endunless
         </div>
 
-        <div class="rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-zinc-900">
+        <div class="col-span-2 rounded-3xl bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] md:col-span-1 md:p-6 dark:bg-zinc-900">
             <div class="flex items-start justify-between">
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">Total Pembayaran</p>
                 <flux:icon name="banknotes" class="size-5 text-zinc-400" />
@@ -312,18 +314,18 @@ new #[Title('Dashboard')] class extends Component
                     <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-[#b9c2ff]"></span> Selesai</span>
                 </div>
             </div>
-            <div class="mt-5 flex h-44 items-end gap-1">
+            <div class="mt-5 flex h-36 items-end gap-1 sm:h-44">
                 @foreach ($this->tren as $bucket)
                     <div class="flex flex-1 flex-col items-center justify-end gap-1 self-stretch" title="{{ $bucket['label'] }}: {{ $bucket['jumlah'] }} dibuat, {{ $bucket['jumlah_selesai'] }} selesai">
                         <div class="flex w-full items-end justify-center gap-[3px] self-stretch" style="height: 100%">
-                            <div class="flex h-full w-2.5 flex-col justify-end">
-                                <div class="w-2.5 rounded-full bg-[#4353ff]" style="height: {{ max($bucket['persen_tinggi'], $bucket['jumlah'] > 0 ? 3 : 0) }}%"></div>
+                            <div class="flex h-full w-1.5 flex-col justify-end sm:w-2.5">
+                                <div class="w-1.5 rounded-full bg-[#4353ff] sm:w-2.5" style="height: {{ max($bucket['persen_tinggi'], $bucket['jumlah'] > 0 ? 3 : 0) }}%"></div>
                             </div>
-                            <div class="flex h-full w-2.5 flex-col justify-end">
-                                <div class="w-2.5 rounded-full bg-[#b9c2ff]" style="height: {{ max($bucket['persen_tinggi_selesai'], $bucket['jumlah_selesai'] > 0 ? 3 : 0) }}%"></div>
+                            <div class="flex h-full w-1.5 flex-col justify-end sm:w-2.5">
+                                <div class="w-1.5 rounded-full bg-[#b9c2ff] sm:w-2.5" style="height: {{ max($bucket['persen_tinggi_selesai'], $bucket['jumlah_selesai'] > 0 ? 3 : 0) }}%"></div>
                             </div>
                         </div>
-                        <span class="text-center text-[10px] text-zinc-400">{{ $bucket['label'] }}</span>
+                        <span @class(['text-center text-[10px] text-zinc-400', 'hidden sm:block' => ! ($loop->first || $loop->last || $loop->index === intdiv(count($this->tren), 2))])>{{ $bucket['label'] }}</span>
                     </div>
                 @endforeach
             </div>
@@ -350,9 +352,9 @@ new #[Title('Dashboard')] class extends Component
                 @if ($totalDistribusi === 0)
                     <flux:text class="mt-4 block">Tidak ada pengajuan pada periode ini.</flux:text>
                 @else
-                    <div class="mt-4 flex flex-wrap items-center gap-6">
-                        <div class="relative h-48 w-48 shrink-0">
-                            <svg viewBox="0 0 200 200" class="h-48 w-48 -rotate-90">
+                    <div class="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap">
+                        <div class="relative h-40 w-40 shrink-0 sm:h-48 sm:w-48">
+                            <svg viewBox="0 0 200 200" class="h-40 w-40 -rotate-90 sm:h-48 sm:w-48">
                                 <circle cx="100" cy="100" r="84" fill="none" stroke-width="22" class="stroke-zinc-100 dark:stroke-zinc-800" />
                                 @foreach ($this->distribusi as $baris)
                                     @if ($baris['jumlah'] > 0)
@@ -372,7 +374,7 @@ new #[Title('Dashboard')] class extends Component
                                 <span class="text-xs text-zinc-400">Pengajuan</span>
                             </div>
                         </div>
-                        <div class="min-w-52 flex-1 space-y-2.5">
+                        <div class="w-full min-w-52 flex-1 space-y-2.5">
                             @foreach ($this->distribusi as $baris)
                                 <div class="flex items-center justify-between gap-3">
                                     <span class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
@@ -431,7 +433,7 @@ new #[Title('Dashboard')] class extends Component
                 @if ($this->antrean->isEmpty())
                     <flux:text class="mt-3 block">Tidak ada pengajuan yang menunggu verifikasi.</flux:text>
                 @else
-                    <flux:table class="mt-3">
+                    <div class="-mx-6 overflow-x-auto px-6"><div class="min-w-[560px]"><flux:table>
                         <flux:table.columns>
                             <flux:table.column>Nomor Pengajuan</flux:table.column>
                             <flux:table.column>Sejak</flux:table.column>
@@ -454,7 +456,7 @@ new #[Title('Dashboard')] class extends Component
                                 </flux:table.row>
                             @endforeach
                         </flux:table.rows>
-                    </flux:table>
+                    </flux:table></div></div>
                 @endif
             </div>
         @endif
@@ -465,7 +467,7 @@ new #[Title('Dashboard')] class extends Component
         @if ($this->terbaru->isEmpty())
             <flux:text class="mt-3 block">Tidak ada pengajuan pada periode ini.</flux:text>
         @else
-            <flux:table class="mt-3">
+            <div class="-mx-6 overflow-x-auto px-6"><div class="min-w-[560px]"><flux:table>
                 <flux:table.columns>
                     <flux:table.column>Nomor Pengajuan</flux:table.column>
                     @unless (auth()->user()->isNasabah())
@@ -492,7 +494,7 @@ new #[Title('Dashboard')] class extends Component
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>
-            </flux:table>
+            </flux:table></div></div>
         @endif
     </div>
 </div>

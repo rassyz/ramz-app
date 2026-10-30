@@ -451,7 +451,7 @@ new #[Title('Detail Pengajuan')] class extends Component
             @endif
             <flux:text class="mt-2 block">Perbaiki dokumen pada bagian Dokumen Pendukung di bawah, lalu ajukan kembali pengajuan ini.</flux:text>
             @can('resubmit', $pengajuan)
-                <flux:button variant="primary" class="mt-3" wire:click="ajukanKembali" wire:confirm="Ajukan kembali pengajuan ini untuk diverifikasi ulang?">Ajukan Kembali</flux:button>
+                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="ajukanKembali" wire:confirm="Ajukan kembali pengajuan ini untuk diverifikasi ulang?">Ajukan Kembali</flux:button>
             @endcan
         </div>
     @endif
@@ -464,7 +464,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                     <flux:table.rows>
                         <flux:table.row>
                             <flux:table.cell class="font-medium">Nasabah</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->user->name }} ({{ $pengajuan->user->email }})</flux:table.cell>
+                            <flux:table.cell class="break-all">{{ $pengajuan->user->name }} ({{ $pengajuan->user->email }})</flux:table.cell>
                         </flux:table.row>
                         <flux:table.row>
                             <flux:table.cell class="font-medium">Jenis Layanan</flux:table.cell>
@@ -616,7 +616,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                             <flux:text class="text-red-500">{{ $message }}</flux:text>
                         @enderror
 
-                        <flux:button variant="primary" type="submit">Simpan Keputusan</flux:button>
+                        <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Simpan Keputusan</flux:button>
                     </form>
                 @endcan
 
@@ -626,13 +626,13 @@ new #[Title('Detail Pengajuan')] class extends Component
                             <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                                 <flux:heading level="3">Kelola Status</flux:heading>
                                 <flux:text class="mt-2 block">Pengajuan sudah terverifikasi dan dapat mulai diproses.</flux:text>
-                                <flux:button variant="primary" class="mt-3" wire:click="majukanStatus('diproses')" wire:confirm="Ubah status menjadi Diproses?">Mulai Diproses</flux:button>
+                                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="majukanStatus('diproses')" wire:confirm="Ubah status menjadi Diproses?">Mulai Diproses</flux:button>
                             </div>
                         @elseif ($pengajuan->status === \App\Enums\StatusPengajuan::Diproses)
                             <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
                                 <flux:heading level="3">Kelola Status</flux:heading>
                                 <flux:text class="mt-2 block">Pengajuan sedang diproses dan dapat ditandai selesai.</flux:text>
-                                <flux:button variant="primary" class="mt-3" wire:click="majukanStatus('selesai')" wire:confirm="Tandai pengajuan ini sebagai Selesai?">Tandai Selesai</flux:button>
+                                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="majukanStatus('selesai')" wire:confirm="Tandai pengajuan ini sebagai Selesai?">Tandai Selesai</flux:button>
                             </div>
                         @endif
                     @endcan
@@ -647,7 +647,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                                     @endforeach
                                 </flux:select>
                                 <flux:text size="sm">Status hanya dapat berpindah satu langkah dari status saat ini ({{ $pengajuan->pembayaran->status->label() }}).</flux:text>
-                                <flux:button variant="primary" type="submit">Simpan Status Pembayaran</flux:button>
+                                <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Simpan Status Pembayaran</flux:button>
                             </form>
                         @endif
                     @endcan
@@ -666,6 +666,40 @@ new #[Title('Detail Pengajuan')] class extends Component
             $petaDokumen = $this->dokumens->keyBy(fn ($d) => strtolower(trim($d->jenis_dokumen)));
         @endphp
 
+        {{-- Kartu dokumen (mobile) — Fase 8.2 --}}
+        <div class="mt-4 space-y-3 lg:hidden">
+            @forelse ($pengajuan->layanan->persyaratan_dokumen ?? [] as $syarat)
+                @php $dokumen = $petaDokumen->get(strtolower(trim($syarat['nama']))); @endphp
+                <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="flex items-start justify-between gap-3">
+                        <span class="font-medium">
+                            {{ $syarat['nama'] }}
+                            <flux:badge size="sm" :color="$syarat['wajib'] ? 'blue' : 'zinc'">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</flux:badge>
+                        </span>
+                        <flux:badge :color="$dokumen ? 'green' : 'amber'">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</flux:badge>
+                    </div>
+                    <p class="mt-2 break-words text-sm text-zinc-500 dark:text-zinc-400">
+                        @if ($dokumen)
+                            {{ $dokumen->nama_file_asli }} ({{ $dokumen->ukuranFormatted() }})
+                        @else
+                            Belum ada berkas diunggah.
+                        @endif
+                    </p>
+                    @if ($dokumen)
+                        <div class="mt-3 flex gap-2">
+                            <flux:button :href="route('dokumens.download', $dokumen)" class="flex-1">Unduh</flux:button>
+                            @can('delete', $dokumen)
+                                <flux:button variant="danger" class="flex-1" wire:click="hapusDokumen({{ $dokumen->id }})" wire:confirm="Hapus dokumen {{ $dokumen->jenis_dokumen }}?">Hapus</flux:button>
+                            @endcan
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <flux:text>Layanan ini belum memiliki persyaratan dokumen.</flux:text>
+            @endforelse
+        </div>
+
+        <div class="mt-4 hidden lg:block">
         <flux:table class="mt-4">
             <flux:table.columns>
                 <flux:table.column>Dokumen</flux:table.column>
@@ -712,6 +746,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                 @endforelse
             </flux:table.rows>
         </flux:table>
+        </div>
 
         @if ($this->dapatKelolaDokumen)
             <form wire:submit="unggahDokumen" class="mt-6 max-w-xl space-y-4">
@@ -747,7 +782,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                     </div>
                 @endif
 
-                <flux:button variant="primary" type="submit">Unggah Dokumen</flux:button>
+                <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Unggah Dokumen</flux:button>
             </form>
         @elseif (auth()->user()->isNasabah())
             <flux:text class="mt-4 block">Dokumen tidak dapat diubah pada status pengajuan saat ini.</flux:text>
@@ -774,6 +809,26 @@ new #[Title('Detail Pengajuan')] class extends Component
                 <flux:text>{{ $hasil->total_sesuai }} sesuai, {{ $hasil->total_tidak_sesuai }} tidak sesuai, dari {{ $hasil->total_pemeriksaan }} pemeriksaan — {{ $hasil->created_at->format('d M Y H:i') }}</flux:text>
             </div>
 
+            {{-- Detail pemeriksaan (mobile) — Fase 8.2 --}}
+            <div class="mt-4 space-y-3 lg:hidden">
+                @foreach ($hasil->details as $detail)
+                    <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700" wire:key="detail-mobile-{{ $detail->id }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="font-medium">{{ $detail->nama_pemeriksaan }}</span>
+                            <flux:badge :color="$detail->hasil->color()">{{ $detail->hasil->label() }}</flux:badge>
+                        </div>
+                        <dl class="mt-2 space-y-1 text-sm">
+                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nilai Pengajuan</dt><dd class="break-all text-right font-medium">{{ $detail->nilai_pengajuan ?? '-' }}</dd></div>
+                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nilai Dokumen</dt><dd class="break-all text-right font-medium">{{ $detail->nilai_dokumen ?? '-' }}</dd></div>
+                        </dl>
+                        @if ($detail->keterangan)
+                            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ $detail->keterangan }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+
+            <div class="mt-4 hidden lg:block">
             <flux:table class="mt-4">
                 <flux:table.columns>
                     <flux:table.column>Pemeriksaan</flux:table.column>
@@ -794,6 +849,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                     @endforeach
                 </flux:table.rows>
             </flux:table>
+            </div>
 
             @if ($this->riwayatPemeriksaan->count() > 1)
                 <flux:text class="mt-4 block font-medium">Riwayat pemeriksaan:</flux:text>

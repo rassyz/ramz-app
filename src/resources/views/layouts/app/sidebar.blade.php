@@ -93,6 +93,8 @@
         <flux:header class="border-b border-zinc-200 bg-white lg:hidden dark:border-zinc-800 dark:bg-zinc-900">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
+            <span class="ml-1 font-semibold text-zinc-900 lg:hidden dark:text-white">{{ config('app.name', 'Laravel') }}</span>
+
             <flux:spacer />
 
             <flux:dropdown position="top" align="end">
