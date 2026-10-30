@@ -4,7 +4,17 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
+// Landing page publik (Fase 9) — statistik agregat publik saja,
+// tanpa data pribadi: layanan aktif, total pengajuan, total pemeriksaan.
+Route::get('/', function () {
+    return view('landing', [
+        'statistik' => [
+            'layanan' => \App\Models\Layanan::where('is_active', true)->count(),
+            'pengajuan' => \App\Models\Pengajuan::count(),
+            'pemeriksaan' => \App\Models\HasilPemeriksaan::count(),
+        ],
+    ]);
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard monitoring dinamis + personalisasi (KF-09/KF-10, Fase 5).

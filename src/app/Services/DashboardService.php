@@ -9,6 +9,7 @@ use App\Models\HasilPemeriksaan;
 use App\Models\Layanan;
 use App\Models\Pembayaran;
 use App\Models\Pengajuan;
+use App\Models\RiwayatStatus;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -105,6 +106,21 @@ class DashboardService
                 : $p->created_at->format('Y-m-d'))
             ->map->count();
 
+        // Seri kedua (Fase 8): pengajuan yang mencapai status Selesai
+        // pada bucket yang sama, dibaca dari riwayat status.
+        $selesaiPerBucket = RiwayatStatus::query()
+            ->where('status_ke', StatusPengajuan::Selesai)
+            ->whereBetween('created_at', [$mulai, $selesai])
+            ->when($user->isNasabah(), fn(Builder $q) => $q->whereHas(
+                'pengajuan',
+                fn(Builder $sub) => $sub->where('user_id', $user->id)
+            ))
+            ->get(['created_at'])
+            ->groupBy(fn(RiwayatStatus $r) => $perMinggu
+                ? $r->created_at->copy()->startOfWeek()->format('Y-m-d')
+                : $r->created_at->format('Y-m-d'))
+            ->map->count();
+
         $buckets = [];
         $kursor = $perMinggu ? $mulai->copy()->startOfWeek() : $mulai->copy()->startOfDay();
         $akhir = $selesai->copy()->startOfDay();
@@ -114,16 +130,50 @@ class DashboardService
             $buckets[] = [
                 'label' => $kursor->format('d M'),
                 'jumlah' => $perBucket[$kunci] ?? 0,
+                'jumlah_selesai' => $selesaiPerBucket[$kunci] ?? 0,
             ];
             $kursor = $kursor->addDays($perMinggu ? 7 : 1);
         }
 
-        $maks = max(array_column($buckets, 'jumlah') ?: [0]);
+        $maks = max(
+            max(array_column($buckets, 'jumlah') ?: [0]),
+            max(array_column($buckets, 'jumlah_selesai') ?: [0])
+        );
 
         return collect($buckets)->map(fn($bucket) => [
             ...$bucket,
             'persen_tinggi' => $maks > 0 ? round($bucket['jumlah'] / $maks * 100, 1) : 0.0,
+            'persen_tinggi_selesai' => $maks > 0 ? round($bucket['jumlah_selesai'] / $maks * 100, 1) : 0.0,
         ])->all();
+    }
+
+    /**
+     * Perubahan metrik total pengajuan dan selesai terhadap periode
+     * sebelumnya yang sama panjang (Fase 8, untuk badge delta).
+     * Persen bernilai null bila periode sebelumnya nol: bendera 'baru'
+     * membedakan "ada aktivitas dari ketiadaan" dari "tetap kosong".
+     *
+     * @return array{total: array{nilai: int, persen: float|null, baru: bool}, selesai: array{nilai: int, persen: float|null, baru: bool}}
+     */
+    public function perubahanPeriode(User $user, CarbonInterface $mulai, CarbonInterface $selesai): array
+    {
+        $durasiDetik = (int) $mulai->diffInSeconds($selesai);
+        $selesaiSebelumnya = $mulai->copy()->subSecond();
+        $mulaiSebelumnya = $selesaiSebelumnya->copy()->subSeconds($durasiDetik);
+
+        $kini = $this->ringkasan($user, $mulai, $selesai);
+        $dulu = $this->ringkasan($user, $mulaiSebelumnya, $selesaiSebelumnya);
+
+        $hitung = fn(int $nilaiKini, int $nilaiDulu) => [
+            'nilai' => $nilaiKini,
+            'persen' => $nilaiDulu > 0 ? round(($nilaiKini - $nilaiDulu) / $nilaiDulu * 100, 1) : null,
+            'baru' => $nilaiDulu === 0 && $nilaiKini > 0,
+        ];
+
+        return [
+            'total' => $hitung($kini['total'], $dulu['total']),
+            'selesai' => $hitung($kini['selesai'], $dulu['selesai']),
+        ];
     }
 
     /**

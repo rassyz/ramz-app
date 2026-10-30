@@ -1,5 +1,5 @@
-@import 'tailwindcss';
-@import '../../vendor/livewire/flux/dist/flux.css';
+@import "tailwindcss";
+@import "../../vendor/livewire/flux/dist/flux.css";
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -9,7 +9,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans:
+        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+        "Noto Color Emoji";
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -23,21 +26,26 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
+    /* Fase 8: token konsep dashboard modern. */
+    --color-primary: #4353ff;
+    --color-primary-strong: #3543d6;
+    --color-primary-soft: #b9c2ff;
+    --color-lavender: #f1f1f8;
+
+    --color-accent: var(--color-primary);
+    --color-accent-content: var(--color-primary);
     --color-accent-foreground: var(--color-white);
 }
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: #8b98ff;
+        --color-accent-content: #8b98ff;
+        --color-accent-foreground: var(--color-neutral-900);
     }
 }
 
 @layer base {
-
     *,
     ::after,
     ::before,
@@ -52,7 +60,7 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
 input:focus[data-flux-control],
@@ -64,3 +72,15 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* Fase 8: item sidebar aktif berbentuk pil biru (penanda bawaan Flux). */
+[data-flux-sidebar-item][data-current="true"],
+[data-flux-navlist-item][data-current="true"] {
+    background-color: var(--color-primary) !important;
+    color: #fff !important;
+}
+
+[data-flux-sidebar-item][data-current="true"] svg,
+[data-flux-navlist-item][data-current="true"] svg {
+    color: #fff !important;
+}
