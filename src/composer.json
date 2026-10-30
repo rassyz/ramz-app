@@ -1,43 +1,33 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "raugadh/fila-starter",
+    "name": "laravel/livewire-starter-kit",
     "type": "project",
-    "description": "Laravel Filament Starter.",
+    "description": "The official Laravel starter kit for Livewire.",
     "keywords": [
         "laravel",
-        "framework",
-        "filament",
-        "starter kit"
+        "framework"
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
-        "awcodes/overlook": "^4.0",
-        "bezhansalleh/filament-shield": "^4.1",
-        "caresome/filament-auth-designer": "^3.0",
-        "charrafimed/global-search-modal": "^5.0",
-        "dutchcodingcompany/filament-developer-logins": "^2.1",
-        "filament/filament": "^5.2",
-        "jacobtims/filament-logger": "^1.1",
-        "jeffgreco13/filament-breezy": "^3.1",
-        "laravel/framework": "^13.0",
+        "php": "^8.3",
+        "laravel/chisel": "^0.1.0",
+        "laravel/fortify": "^1.37.2",
+        "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
-        "livewire/livewire": "^4.1",
-        "marcelweidum/filament-expiration-notice": "^1.0",
-        "openplain/filament-shadcn-theme": "^1.1"
+        "livewire/blaze": "^1.0",
+        "livewire/flux": "^2.13.1",
+        "livewire/livewire": "^4.1"
     },
     "require-dev": {
-        "barryvdh/laravel-debugbar": "^4.0",
-        "fakerphp/faker": "^1.23",
-        "laravel/boost": "^2.1",
-        "laravel/pail": "^1.2.2",
-        "laravel/pint": "^1.24",
-        "laravel/sail": "^1.41",
+        "fakerphp/faker": "^1.24",
+        "larastan/larastan": "^3.9",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "laravel/sail": "^1.53",
         "mockery/mockery": "^1.6",
-        "nunomaduro/collision": "^8.6",
-        "peckphp/peck": "^0.2.0",
-        "pestphp/pest": "^4.3",
-        "pestphp/pest-plugin-laravel": "^4.0"
+        "nunomaduro/collision": "^8.9.3",
+        "phpunit/phpunit": "^12.5.23"
     },
     "autoload": {
         "psr-4": {
@@ -56,52 +46,62 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
+            "@php artisan migrate --force",
             "npm install",
             "npm run build"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently -c \"#93c5fd,#c4b5fd,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"npm run dev\" --names='server,queue,vite'"
+            "@php artisan dev"
+        ],
+        "lint": [
+            "pint --parallel"
+        ],
+        "lint:check": [
+            "pint --parallel --test"
+        ],
+        "ci:check": [
+            "Composer\\Config::disableProcessTimeout",
+            "@test"
+        ],
+        "types:check": [
+            "phpstan analyse"
         ],
         "test": [
             "@php artisan config:clear --ansi",
+            "@lint:check",
+            "@types:check",
             "@php artisan test"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
-            "@php artisan package:discover --ansi",
-            "@php artisan filament:upgrade"
+            "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
-            "@php artisan boost:update --ansi",
-            "composer fix"
+            "@php artisan install:features --ansi",
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
+            "@php rename_livewire_files.php",
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi",
-            "npm install",
-            "composer fix"
+            "@php artisan migrate --graceful --ansi"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
-        ],
-        "lint": [
-            "./vendor/bin/pint --test",
-            "npm run lint"
-        ],
-        "fix": [
-            "./vendor/bin/pint",
-            "npm run fix"
         ]
     },
     "extra": {
         "laravel": {
-            "dont-discover": []
+            "dont-discover": [],
+            "installer": {
+                "post-create-project": [
+                    "@php artisan install:features --ansi"
+                ]
+            }
         }
     },
     "config": {

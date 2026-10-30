@@ -1,21 +1,14 @@
 <?php
 
-declare(strict_types=1);
-
 namespace App\Providers;
 
-use App\Policies\ActivityPolicy;
-use Filament\Livewire\Notifications;
-use Filament\Notifications\Notification;
-use Filament\Pages\Page;
-use Filament\Support\Enums\Alignment;
-use Filament\Support\Enums\VerticalAlignment;
-use Illuminate\Support\Facades\Gate;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Date;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\ValidationException;
-use Spatie\Activitylog\Models\Activity;
+use Illuminate\Validation\Rules\Password;
 
-final class AppServiceProvider extends ServiceProvider
+class AppServiceProvider extends ServiceProvider
 {
     /**
      * Register any application services.
@@ -30,15 +23,28 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::policy(Activity::class, ActivityPolicy::class);
-        Page::formActionsAlignment(Alignment::Right);
-        Notifications::alignment(Alignment::End);
-        Notifications::verticalAlignment(VerticalAlignment::End);
-        Page::$reportValidationErrorUsing = function (ValidationException $exception): void {
-            Notification::make()
-                ->title($exception->getMessage())
-                ->danger()
-                ->send();
-        };
+        $this->configureDefaults();
+    }
+
+    /**
+     * Configure default behaviors for production-ready applications.
+     */
+    protected function configureDefaults(): void
+    {
+        Date::use(CarbonImmutable::class);
+
+        DB::prohibitDestructiveCommands(
+            app()->isProduction(),
+        );
+
+        Password::defaults(fn (): ?Password => app()->isProduction()
+            ? Password::min(12)
+                ->mixedCase()
+                ->letters()
+                ->numbers()
+                ->symbols()
+                ->uncompromised()
+            : null,
+        );
     }
 }
