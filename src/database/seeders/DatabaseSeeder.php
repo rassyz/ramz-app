@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
+use Database\Seeders\AturanValidasiSeeder;
 use Database\Seeders\DemoPengajuanSeeder;
 use Database\Seeders\DemoUsersSeeder;
 use Database\Seeders\LayananSeeder;
@@ -33,6 +34,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             LayananSeeder::class,
             DemoPengajuanSeeder::class,
+        ]);
+
+        // Seeder untuk aturan validasi checker.
+        $this->call([
+            AturanValidasiSeeder::class,
         ]);
     }
 }

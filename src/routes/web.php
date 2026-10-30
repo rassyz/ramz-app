@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DokumenController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -16,6 +17,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('admin/layanans', 'pages::admin.layanans')
         ->middleware('role:admin')
         ->name('admin.layanans');
+
+    // Khusus Admin: aturan validasi Rule-Based Evidence Checker (KF-06).
+    Route::livewire('admin/aturan-validasi', 'pages::admin.aturan-validasi')
+        ->middleware('role:admin')
+        ->name('admin.aturan-validasi');
+
+    // Unduh berkas dokumen pendukung (KF-05) — akses dijaga DokumenPolicy
+    // di dalam controller, berkas disimpan privat bukan URL publik.
+    Route::get('dokumens/{dokumen}/download', [DokumenController::class, 'download'])
+        ->name('dokumens.download');
 
     // Khusus Nasabah: pengajuan milik sendiri (KF-03).
     Route::livewire('pengajuan-saya', 'pages::nasabah.pengajuan-saya')

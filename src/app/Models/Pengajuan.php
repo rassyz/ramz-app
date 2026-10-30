@@ -3,6 +3,12 @@
 namespace App\Models;
 
 use App\Enums\StatusPengajuan;
+use App\Models\Dokumen;
+use App\Models\HasilPemeriksaan;
+use App\Models\Layanan;
+use App\Models\Pembayaran;
+use App\Models\RiwayatStatus;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -85,6 +91,36 @@ class Pengajuan extends Model
     }
 
     /**
+     * Dokumen pendukung yang terunggah untuk pengajuan ini (Fase 3).
+     *
+     * @return HasMany<Dokumen, $this>
+     */
+    public function dokumens(): HasMany
+    {
+        return $this->hasMany(Dokumen::class);
+    }
+
+    /**
+     * Seluruh riwayat pemeriksaan checker, terbaru di atas (Fase 3).
+     *
+     * @return HasMany<HasilPemeriksaan, $this>
+     */
+    public function hasilPemeriksaans(): HasMany
+    {
+        return $this->hasMany(HasilPemeriksaan::class)->latest();
+    }
+
+    /**
+     * Pemeriksaan checker paling terakhir (Fase 3).
+     *
+     * @return HasOne<HasilPemeriksaan, $this>
+     */
+    public function hasilPemeriksaanTerakhir(): HasOne
+    {
+        return $this->hasOne(HasilPemeriksaan::class)->latestOfMany();
+    }
+
+    /**
      * Membuat nomor pengajuan unik dengan format PGJ-YYYYMMDD-XXXX,
      * XXXX adalah nomor urut pada hari berjalan. Wajib dipanggil di
      * dalam transaksi database agar nomor tidak bentrok.
@@ -97,6 +133,6 @@ class Pengajuan extends Model
             ->lockForUpdate()
             ->count();
 
-        return 'PGJ-'.$tanggal.'-'.str_pad((string) ($jumlahHariIni + 1), 4, '0', STR_PAD_LEFT);
+        return 'PGJ-' . $tanggal . '-' . str_pad((string) ($jumlahHariIni + 1), 4, '0', STR_PAD_LEFT);
     }
 }

@@ -28,6 +28,12 @@
                         </flux:sidebar.item>
                     @endif
 
+                    @if (auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="shield-check" :href="route('admin.aturan-validasi')" :current="request()->routeIs('admin.aturan-validasi')" wire:navigate>
+                            {{ __('Aturan Validasi') }}
+                        </flux:sidebar.item>
+                    @endif
+
                     @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
                         <flux:sidebar.item icon="document-text" :href="route('pengajuans.index')" :current="request()->routeIs('pengajuans.*')" wire:navigate>
                             {{ __('Pengajuan') }}

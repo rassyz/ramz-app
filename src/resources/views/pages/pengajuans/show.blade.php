@@ -1,16 +1,39 @@
 <?php
 
+use App\Enums\MataUang;
 use App\Enums\StatusPengajuan;
+use App\Models\Dokumen;
 use App\Models\Pengajuan;
+use App\Services\RuleBasedEvidenceChecker;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 new #[Title('Detail Pengajuan')] class extends Component
 {
+    use WithFileUploads;
+
     public Pengajuan $pengajuan;
+
+    // Form unggah / ganti dokumen
+    public string $uploadJenis = '';
+
+    public $uploadFile = null;
+
+    public string $docNomorInvoice = '';
+
+    public string $docIdentitas = '';
+
+    public string $docNominal = '';
+
+    public string $docMataUang = 'USD';
+
+    public string $docJenisLayanan = '';
 
     /**
      * Akses detail ditegakkan PengajuanPolicy: staf dapat melihat
@@ -26,6 +49,164 @@ new #[Title('Detail Pengajuan')] class extends Component
     public function riwayat()
     {
         return $this->pengajuan->riwayatStatuses()->with('diubahOleh')->get();
+    }
+
+    #[Computed]
+    public function dokumens()
+    {
+        return $this->pengajuan->dokumens()->get();
+    }
+
+    /**
+     * Nama jenis dokumen dari persyaratan layanan pengajuan ini.
+     *
+     * @return list<string>
+     */
+    #[Computed]
+    public function daftarJenisDokumen(): array
+    {
+        return collect($this->pengajuan->layanan->persyaratan_dokumen ?? [])
+            ->pluck('nama')
+            ->all();
+    }
+
+    #[Computed]
+    public function dapatKelolaDokumen(): bool
+    {
+        return auth()->user()->can('create', [Dokumen::class, $this->pengajuan]);
+    }
+
+    #[Computed]
+    public function jenisTerpilihInvoice(): bool
+    {
+        return $this->uploadJenis !== ''
+            && str_contains(strtolower($this->uploadJenis), 'invoice');
+    }
+
+    #[Computed]
+    public function hasilTerakhir()
+    {
+        return $this->pengajuan->hasilPemeriksaanTerakhir()
+            ->with('details')
+            ->first();
+    }
+
+    #[Computed]
+    public function riwayatPemeriksaan()
+    {
+        return $this->pengajuan->hasilPemeriksaans()->limit(5)->get();
+    }
+
+    /**
+     * Saat jenis dokumen dipilih, isi awal form data dokumen diambil
+     * dari dokumen yang sudah ada (untuk penggantian) agar mudah diedit.
+     */
+    public function updatedUploadJenis(): void
+    {
+        $existing = $this->dokumens->firstWhere('jenis_dokumen', $this->uploadJenis);
+
+        $this->docNomorInvoice = $existing?->doc_nomor_invoice ?? '';
+        $this->docIdentitas = $existing?->doc_identitas_nasabah ?? auth()->user()->name;
+        $this->docNominal = $existing?->doc_nominal ?? '';
+        $this->docMataUang = $existing?->doc_mata_uang?->value ?? 'USD';
+        $this->docJenisLayanan = $existing?->doc_jenis_layanan ?? $this->pengajuan->layanan->kode;
+    }
+
+    public function unggahDokumen(): void
+    {
+        $this->authorize('create', [Dokumen::class, $this->pengajuan]);
+
+        $rules = [
+            'uploadJenis' => ['required', 'string', Rule::in($this->daftarJenisDokumen)],
+            'uploadFile' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        ];
+
+        if ($this->jenisTerpilihInvoice) {
+            $rules += [
+                'docNomorInvoice' => ['required', 'string', 'max:100'],
+                'docIdentitas' => ['required', 'string', 'max:255'],
+                'docNominal' => ['required', 'numeric', 'min:0'],
+                'docMataUang' => ['required', Rule::enum(MataUang::class)],
+                'docJenisLayanan' => ['required', 'string', 'max:50'],
+            ];
+        }
+
+        $this->validate($rules, [
+            'uploadFile.required' => 'Pilih berkas dokumen terlebih dahulu.',
+            'uploadFile.mimes' => 'Berkas harus berformat PDF, JPG, JPEG, atau PNG.',
+            'uploadFile.max' => 'Ukuran berkas maksimal 5 MB.',
+            'docNomorInvoice.required' => 'Nomor invoice pada dokumen wajib diisi.',
+            'docIdentitas.required' => 'Identitas nasabah pada dokumen wajib diisi.',
+            'docNominal.required' => 'Nominal pada dokumen wajib diisi.',
+        ]);
+
+        $existing = $this->pengajuan->dokumens()
+            ->where('jenis_dokumen', $this->uploadJenis)
+            ->first();
+
+        $pathBaru = $this->uploadFile->store('dokumen/'.$this->pengajuan->id, 'local');
+
+        $isInvoice = $this->jenisTerpilihInvoice;
+
+        Dokumen::updateOrCreate(
+            ['pengajuan_id' => $this->pengajuan->id, 'jenis_dokumen' => $this->uploadJenis],
+            [
+                'nama_file_asli' => $this->uploadFile->getClientOriginalName(),
+                'path_file' => $pathBaru,
+                'mime' => $this->uploadFile->getMimeType(),
+                'ukuran_file' => $this->uploadFile->getSize(),
+                'diupload_oleh' => auth()->id(),
+                'doc_nomor_invoice' => $isInvoice ? $this->docNomorInvoice : null,
+                'doc_identitas_nasabah' => $isInvoice ? $this->docIdentitas : null,
+                'doc_nominal' => $isInvoice ? $this->docNominal : null,
+                'doc_mata_uang' => $isInvoice ? $this->docMataUang : null,
+                'doc_jenis_layanan' => $isInvoice ? $this->docJenisLayanan : null,
+            ]
+        );
+
+        // Berkas lama dari dokumen yang diganti dihapus dari storage.
+        if ($existing && $existing->path_file !== $pathBaru) {
+            Storage::disk('local')->delete($existing->path_file);
+        }
+
+        // Checker berjalan otomatis setelah dokumen berubah (alur To-Be).
+        app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
+
+        Flux::toast(variant: 'success', text: 'Dokumen '.$this->uploadJenis.' berhasil diunggah dan pemeriksaan otomatis telah dijalankan.');
+
+        $this->reset('uploadJenis', 'uploadFile', 'docNomorInvoice', 'docIdentitas', 'docNominal', 'docJenisLayanan');
+        $this->docMataUang = 'USD';
+        unset($this->dokumens, $this->hasilTerakhir, $this->riwayatPemeriksaan);
+    }
+
+    public function hapusDokumen(int $dokumenId): void
+    {
+        $dokumen = $this->pengajuan->dokumens()->findOrFail($dokumenId);
+
+        $this->authorize('delete', $dokumen);
+
+        Storage::disk('local')->delete($dokumen->path_file);
+        $dokumen->delete();
+
+        app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
+
+        Flux::toast(variant: 'success', text: 'Dokumen berhasil dihapus dan pemeriksaan otomatis telah dijalankan.');
+
+        unset($this->dokumens, $this->hasilTerakhir, $this->riwayatPemeriksaan);
+    }
+
+    /**
+     * Pemeriksaan manual oleh staf (Operator/Admin) dari halaman detail.
+     */
+    public function jalankanPemeriksaan(): void
+    {
+        abort_unless(auth()->user()->isAdmin() || auth()->user()->isOperator(), 403);
+
+        $hasil = app(RuleBasedEvidenceChecker::class)->periksa($this->pengajuan);
+
+        Flux::toast(variant: 'success', text: 'Pemeriksaan selesai: '.$hasil->status->label().' ('.$hasil->total_sesuai.' dari '.$hasil->total_pemeriksaan.' pemeriksaan sesuai).');
+
+        unset($this->hasilTerakhir, $this->riwayatPemeriksaan);
     }
 
     public function batalkan(): void
@@ -134,18 +315,6 @@ new #[Title('Detail Pengajuan')] class extends Component
                     <flux:text class="mt-3 block">Belum ada data pembayaran terhubung.</flux:text>
                 @endif
             </div>
-
-            <div>
-                <flux:heading level="2">Persyaratan Dokumen Layanan</flux:heading>
-                <ul class="mt-3 list-inside list-disc space-y-1">
-                    @forelse ($pengajuan->layanan->persyaratan_dokumen ?? [] as $syarat)
-                        <li><flux:text size="sm">{{ $syarat['nama'] }}@if (!$syarat['wajib']) (opsional)@endif</flux:text></li>
-                    @empty
-                        <li><flux:text size="sm">Belum ada persyaratan dokumen untuk layanan ini.</flux:text></li>
-                    @endforelse
-                </ul>
-                <flux:text size="sm" class="mt-2 block">Unggah dokumen dan hasil pemeriksaan kelengkapan hadir pada fase dokumen dan checker.</flux:text>
-            </div>
         </div>
 
         <div>
@@ -172,5 +341,157 @@ new #[Title('Detail Pengajuan')] class extends Component
                 @endforelse
             </div>
         </div>
+    </div>
+
+    <flux:separator class="my-8" />
+
+    <div>
+        <flux:heading level="2">Dokumen Pendukung</flux:heading>
+        <flux:subheading>Dokumen yang dipersyaratkan oleh jenis layanan pengajuan ini beserta status unggahannya.</flux:subheading>
+
+        @php
+            $petaDokumen = $this->dokumens->keyBy(fn ($d) => strtolower(trim($d->jenis_dokumen)));
+        @endphp
+
+        <flux:table class="mt-4">
+            <flux:table.columns>
+                <flux:table.column>Dokumen</flux:table.column>
+                <flux:table.column>Status</flux:table.column>
+                <flux:table.column>Berkas</flux:table.column>
+                <flux:table.column></flux:table.column>
+            </flux:table.columns>
+            <flux:table.rows>
+                @forelse ($pengajuan->layanan->persyaratan_dokumen ?? [] as $syarat)
+                    @php $dokumen = $petaDokumen->get(strtolower(trim($syarat['nama']))); @endphp
+                    <flux:table.row>
+                        <flux:table.cell class="font-medium">
+                            {{ $syarat['nama'] }}
+                            <flux:badge size="sm" :color="$syarat['wajib'] ? 'blue' : 'zinc'">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            <flux:badge :color="$dokumen ? 'green' : 'amber'">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</flux:badge>
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if ($dokumen)
+                                {{ $dokumen->nama_file_asli }} ({{ $dokumen->ukuranFormatted() }})
+                            @else
+                                -
+                            @endif
+                        </flux:table.cell>
+                        <flux:table.cell>
+                            @if ($dokumen)
+                                <div class="flex justify-end gap-2">
+                                    <flux:button size="sm" :href="route('dokumens.download', $dokumen)">Unduh</flux:button>
+                                    @can('delete', $dokumen)
+                                        <flux:button size="sm" variant="danger" wire:click="hapusDokumen({{ $dokumen->id }})" wire:confirm="Hapus dokumen {{ $dokumen->jenis_dokumen }}?">Hapus</flux:button>
+                                    @endcan
+                                </div>
+                            @endif
+                        </flux:table.cell>
+                    </flux:table.row>
+                @empty
+                    <flux:table.row>
+                        <flux:table.cell>Layanan ini belum memiliki persyaratan dokumen.</flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                        <flux:table.cell></flux:table.cell>
+                    </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
+
+        @if ($this->dapatKelolaDokumen)
+            <form wire:submit="unggahDokumen" class="mt-6 max-w-xl space-y-4">
+                <flux:heading level="3">Unggah / Ganti Dokumen</flux:heading>
+
+                <flux:select wire:model.live="uploadJenis" label="Jenis Dokumen" placeholder="Pilih jenis dokumen">
+                    @foreach ($this->daftarJenisDokumen as $jenis)
+                        <option value="{{ $jenis }}">{{ $jenis }}{{ $petaDokumen->has(strtolower(trim($jenis))) ? ' (sudah ada — unggah ulang untuk mengganti)' : '' }}</option>
+                    @endforeach
+                </flux:select>
+
+                <flux:input wire:model="uploadFile" label="Berkas (PDF/JPG/PNG, maks 5 MB)" type="file" />
+                @error('uploadFile')
+                    <flux:text class="text-red-500">{{ $message }}</flux:text>
+                @enderror
+
+                @if ($this->jenisTerpilihInvoice)
+                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                        <flux:text class="font-medium">Data yang tertera pada dokumen Invoice — diisi persis seperti pada dokumen, dipakai untuk pemeriksaan otomatis:</flux:text>
+                        <flux:input wire:model="docNomorInvoice" label="Nomor Invoice pada Dokumen" type="text" required />
+                        <flux:input wire:model="docIdentitas" label="Identitas Nasabah pada Dokumen" type="text" required />
+                        <flux:input wire:model="docNominal" label="Nominal pada Dokumen" type="number" step="0.01" min="0" required />
+                        <flux:select wire:model="docMataUang" label="Mata Uang pada Dokumen" required>
+                            @foreach (MataUang::cases() as $mataUang)
+                                <option value="{{ $mataUang->value }}">{{ $mataUang->label() }}</option>
+                            @endforeach
+                        </flux:select>
+                        <flux:select wire:model="docJenisLayanan" label="Jenis Layanan pada Dokumen" required>
+                            @foreach (\App\Models\Layanan::aktif()->orderBy('nama')->get() as $layananPilihan)
+                                <option value="{{ $layananPilihan->kode }}">{{ $layananPilihan->nama }} ({{ $layananPilihan->kode }})</option>
+                            @endforeach
+                        </flux:select>
+                    </div>
+                @endif
+
+                <flux:button variant="primary" type="submit">Unggah Dokumen</flux:button>
+            </form>
+        @elseif (auth()->user()->isNasabah())
+            <flux:text class="mt-4 block">Dokumen tidak dapat diubah pada status pengajuan saat ini.</flux:text>
+        @endif
+    </div>
+
+    <flux:separator class="my-8" />
+
+    <div>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <flux:heading level="2">Hasil Pemeriksaan — Rule-Based Evidence Checker</flux:heading>
+                <flux:subheading>Pemeriksaan kelengkapan dokumen dan pencocokan data terstruktur. Hasil ini bersifat pendukung; keputusan verifikasi akhir tetap pada Operator.</flux:subheading>
+            </div>
+            @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
+                <flux:button wire:click="jalankanPemeriksaan">Jalankan Pemeriksaan</flux:button>
+            @endif
+        </div>
+
+        @if ($this->hasilTerakhir)
+            @php $hasil = $this->hasilTerakhir; @endphp
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+                <flux:badge size="lg" :color="$hasil->status->color()">{{ $hasil->status->label() }}</flux:badge>
+                <flux:text>{{ $hasil->total_sesuai }} sesuai, {{ $hasil->total_tidak_sesuai }} tidak sesuai, dari {{ $hasil->total_pemeriksaan }} pemeriksaan — {{ $hasil->created_at->format('d M Y H:i') }}</flux:text>
+            </div>
+
+            <flux:table class="mt-4">
+                <flux:table.columns>
+                    <flux:table.column>Pemeriksaan</flux:table.column>
+                    <flux:table.column>Nilai Pengajuan</flux:table.column>
+                    <flux:table.column>Nilai Dokumen</flux:table.column>
+                    <flux:table.column>Hasil</flux:table.column>
+                    <flux:table.column>Keterangan</flux:table.column>
+                </flux:table.columns>
+                <flux:table.rows>
+                    @foreach ($hasil->details as $detail)
+                        <flux:table.row :key="$detail->id">
+                            <flux:table.cell class="font-medium">{{ $detail->nama_pemeriksaan }}</flux:table.cell>
+                            <flux:table.cell>{{ $detail->nilai_pengajuan ?? '-' }}</flux:table.cell>
+                            <flux:table.cell>{{ $detail->nilai_dokumen ?? '-' }}</flux:table.cell>
+                            <flux:table.cell><flux:badge :color="$detail->hasil->color()">{{ $detail->hasil->label() }}</flux:badge></flux:table.cell>
+                            <flux:table.cell>{{ $detail->keterangan }}</flux:table.cell>
+                        </flux:table.row>
+                    @endforeach
+                </flux:table.rows>
+            </flux:table>
+
+            @if ($this->riwayatPemeriksaan->count() > 1)
+                <flux:text class="mt-4 block font-medium">Riwayat pemeriksaan:</flux:text>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    @foreach ($this->riwayatPemeriksaan as $riwayatHasil)
+                        <flux:badge :color="$riwayatHasil->status->color()">{{ $riwayatHasil->created_at->format('d M H:i') }} — {{ $riwayatHasil->status->label() }}</flux:badge>
+                    @endforeach
+                </div>
+            @endif
+        @else
+            <flux:text class="mt-4 block">Belum ada pemeriksaan. Pemeriksaan berjalan otomatis setiap dokumen diunggah, diganti, atau dihapus.</flux:text>
+        @endif
     </div>
 </section>
