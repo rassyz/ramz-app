@@ -21,6 +21,24 @@
                             {{ __('Kelola Pengguna') }}
                         </flux:sidebar.item>
                     @endif
+
+                    @if (auth()->user()->isAdmin())
+                        <flux:sidebar.item icon="clipboard-document-list" :href="route('admin.layanans')" :current="request()->routeIs('admin.layanans')" wire:navigate>
+                            {{ __('Master Layanan') }}
+                        </flux:sidebar.item>
+                    @endif
+
+                    @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
+                        <flux:sidebar.item icon="document-text" :href="route('pengajuans.index')" :current="request()->routeIs('pengajuans.*')" wire:navigate>
+                            {{ __('Pengajuan') }}
+                        </flux:sidebar.item>
+                    @endif
+
+                    @if (auth()->user()->isNasabah())
+                        <flux:sidebar.item icon="inbox-arrow-down" :href="route('nasabah.pengajuan')" :current="request()->routeIs('nasabah.pengajuan')" wire:navigate>
+                            {{ __('Pengajuan Saya') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

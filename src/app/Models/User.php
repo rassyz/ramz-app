@@ -8,6 +8,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -15,6 +16,7 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use App\Models\Pengajuan;
 
 /**
  * @property int $id
@@ -82,5 +84,21 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function isNasabah(): bool
     {
         return $this->role === UserRole::Nasabah;
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Relasi pengajuan (Fase 2)
+     |--------------------------------------------------------------------------
+     */
+
+    /**
+     * Pengajuan layanan milik pengguna ini (sebagai nasabah).
+     *
+     * @return HasMany<Pengajuan, $this>
+     */
+    public function pengajuans(): HasMany
+    {
+        return $this->hasMany(Pengajuan::class);
     }
 }
