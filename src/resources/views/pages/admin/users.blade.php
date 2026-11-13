@@ -186,11 +186,11 @@ new #[Title('Kelola Pengguna')] class extends Component
 
     <flux:separator class="mt-4 mb-6" />
 
-    <div class="grid gap-8 lg:grid-cols-3">
-        <div class="lg:col-span-1">
+    <div class="space-y-10">
+        <div>
             <flux:heading level="2">Tambah Pengguna</flux:heading>
 
-            <form wire:submit="createUser" class="mt-4 space-y-4">
+            <form wire:submit="createUser" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:input wire:model="name" label="Nama" type="text" required autocomplete="name" />
                 <flux:input wire:model="email" label="Email" type="email" required autocomplete="email" />
                 <flux:input wire:model="nomorHp" label="Nomor HP (WhatsApp)" type="text" placeholder="08xxxxxxxxxx" />
@@ -201,11 +201,13 @@ new #[Title('Kelola Pengguna')] class extends Component
                     @endforeach
                 </flux:select>
 
-                <flux:button variant="primary" type="submit" class="w-full">Tambah Pengguna</flux:button>
+                <div class="sm:col-span-2 lg:col-span-3">
+                <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Tambah Pengguna</flux:button>
+                </div>
             </form>
         </div>
 
-        <div class="lg:col-span-2">
+        <div>
             <div class="flex items-center justify-between gap-4">
                 <flux:heading level="2">Daftar Pengguna</flux:heading>
                 <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau email..." class="max-w-64" />

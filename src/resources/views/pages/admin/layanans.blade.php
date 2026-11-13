@@ -173,15 +173,20 @@ new #[Title('Master Layanan')] class extends Component
 
     <flux:separator class="mt-4 mb-6" />
 
-    <div class="grid gap-8 lg:grid-cols-3">
-        <div class="lg:col-span-1">
+    <div class="space-y-10">
+        <div>
             <flux:heading level="2">{{ $editingId ? 'Ubah Layanan' : 'Tambah Layanan' }}</flux:heading>
 
             <form wire:submit="simpan" class="mt-4 space-y-4">
-                <flux:input wire:model="kode" label="Kode" type="text" required placeholder="mis. LC-IMP" />
-                <flux:input wire:model="nama" label="Nama Layanan" type="text" required />
-                <flux:textarea wire:model="deskripsi" label="Deskripsi" rows="3" />
-                <flux:checkbox wire:model="is_active" label="Aktif (dapat dipilih nasabah)" />
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <flux:input wire:model="kode" label="Kode" type="text" required placeholder="mis. LC-IMP" />
+                    <flux:input wire:model="nama" label="Nama Layanan" type="text" required />
+                    <flux:textarea wire:model="deskripsi" label="Deskripsi" rows="3" />
+
+                    <div class="self-start">
+                        <flux:checkbox wire:model="is_active" label="Aktif (dapat dipilih nasabah)" />
+                    </div>
+                </div>
 
                 <div class="space-y-3">
                     <flux:heading level="3">Persyaratan Dokumen</flux:heading>
@@ -206,7 +211,7 @@ new #[Title('Master Layanan')] class extends Component
             </form>
         </div>
 
-        <div class="lg:col-span-2">
+        <div>
             <div class="flex items-center justify-between gap-4">
                 <flux:heading level="2">Daftar Layanan</flux:heading>
                 <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau kode..." class="max-w-64" />
