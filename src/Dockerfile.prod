@@ -63,7 +63,7 @@ RUN mkdir -p /var/www/html/storage/app/public \
 # ---------------------------------------------------------------------------
 # Stage 3: runtime — hanya PHP-FPM + extension terkompilasi + kode jadi
 # ---------------------------------------------------------------------------
-FROM php:8.4-fpm AS runtime
+FROM php:8.4.27-fpm AS runtime
 
 ENV TZ=Asia/Jakarta
 
