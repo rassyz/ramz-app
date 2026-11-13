@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\WhatsApp\FonntePengirimWhatsApp;
 use App\Services\WhatsApp\LogPengirimWhatsApp;
 use App\Services\WhatsApp\PengirimWhatsApp;
 use Carbon\CarbonImmutable;
@@ -17,7 +18,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(PengirimWhatsApp::class, LogPengirimWhatsApp::class);
+        // Gerbang WhatsApp (KF-11) dipilih lewat WHATSAPP_DRIVER:
+        // "fonnte" mengirim sungguhan via Fonnte, nilai lain (bawaan
+        // "log") menulis ke log aplikasi — aman untuk lokal & test.
+        $this->app->bind(PengirimWhatsApp::class, match (config('services.whatsapp.driver')) {
+            'fonnte' => FonntePengirimWhatsApp::class,
+            default => LogPengirimWhatsApp::class,
+        });
     }
 
     /**
@@ -40,13 +47,13 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Password::defaults(
-            fn(): ?Password => app()->isProduction()
+            fn (): ?Password => app()->isProduction()
                 ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
+                    ->mixedCase()
+                    ->letters()
+                    ->numbers()
+                    ->symbols()
+                    ->uncompromised()
                 : null,
         );
     }
