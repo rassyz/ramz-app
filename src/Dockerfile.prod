@@ -31,10 +31,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
         pdo_mysql bcmath zip gd intl exif pcntl \
     && docker-php-ext-enable opcache
 
-RUN mkdir -p /tmp/ext-libs \
-    && for so in /usr/local/lib/php/extensions/*/*.so; do ldd "$so"; done \
-        | awk '$2 == "=>" {print $3}' | sort -u \
-        | | xargs -r -I{} cp -L {} /tmp/ext-libs/
+RUN mkdir -p /tmp/ext-libs && \
+    for so in /usr/local/lib/php/extensions/*/*.so; do ldd "$so"; done | \
+    awk '$2 == "=>" {print $3}' | sort -u | \
+    xargs -r -I{} cp -L {} /tmp/ext-libs/
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
