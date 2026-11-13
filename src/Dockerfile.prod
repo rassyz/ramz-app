@@ -16,7 +16,7 @@
 # ---------------------------------------------------------------------------
 # Stage 1: builder — pasang extension PHP + composer install --no-dev
 # ---------------------------------------------------------------------------
-FROM php:8.4-fpm AS builder
+FROM php:8.4.27-fpm AS builder
 
 ENV COMPOSER_MEMORY_LIMIT=-1 \
     TZ=Asia/Jakarta
