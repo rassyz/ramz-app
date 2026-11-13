@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'whatsapp' => [
+        // Pengemudi gerbang WhatsApp (KF-11): "log" (bawaan, aman untuk
+        // lokal & test) atau "fonnte" (pengiriman sungguhan).
+        'driver' => env('WHATSAPP_DRIVER', 'log'),
+
+        'fonnte' => [
+            'token' => env('FONNTE_TOKEN'),
+            'base_url' => env('FONNTE_BASE_URL', 'https://api.fonnte.com'),
+        ],
+    ],
+
 ];

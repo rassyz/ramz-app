@@ -25,10 +25,6 @@ class LayananSeeder extends Seeder
                 'kode' => 'LC-IMP',
                 'nama' => 'Penerbitan L/C Impor',
                 'deskripsi' => 'Penerbitan Letter of Credit untuk pembayaran transaksi impor.',
-                // Set baku dokumen LC (Fase 10, info lapangan 13 Nov 2026):
-                // dokumen ditentukan oleh LC — BOE, Invoice, Packing List,
-                // Bill of Lading, Insurance hampir selalu wajib; Surat Jalan
-                // dan Sertifikat contoh variasi opsional per LC.
                 'persyaratan_dokumen' => [
                     ['nama' => 'Bill of Exchange (BOE)', 'wajib' => true],
                     ['nama' => 'Invoice', 'wajib' => true],
