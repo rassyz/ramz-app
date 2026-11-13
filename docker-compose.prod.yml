@@ -1,0 +1,116 @@
+# INSTANCE compose production ramz — versi ROOT PROYEK (direvisi 13 Nov 2026).
+# Hasil terapan templates/laravel-app/docker-compose.prod.yml dengan
+# slug "ramz": file ini tinggal di ROOT repo ramz-app (sejajar
+# docker-compose.yml dev), konteks build ./src, database ramz_app,
+# user ramz_user, alias web-ramz di network edge (nama yang dirujuk
+# blok ramz di Caddyfile). MENGGANTIKAN versi lama yang ditaruh di src/.
+# File ini TIDAK punya "ports:" — satu-satunya pintu masuk adalah
+# Caddy lewat network edge menuju service web.
+# .env production tinggal di src/.env (dibuat HANYA di VPS, chmod 600,
+# tidak pernah di-commit).
+name: ramz
+
+x-app-image: &app-image
+  build:
+    context: ./src
+    dockerfile: Dockerfile.prod
+    target: runtime
+  image: ramz-app:prod
+
+services:
+  app:
+    <<: *app-image
+    container_name: ramz-app
+    restart: unless-stopped
+    mem_limit: 512m
+    env_file:
+      - ./src/.env
+    environment:
+      # HANYA service ini yang boleh menjalankan migration saat start.
+      RUN_MIGRATIONS: "1"
+    volumes:
+      - ramz_storage:/var/www/html/storage
+    networks:
+      appnet:
+      backend:
+        aliases:
+          - app-ramz
+    # Tidak ada depends_on ke DB: menunggu DB adalah tugas entrypoint prod
+    # (docker-entrypoint.prod.sh), supaya stack app tetap bisa `up` walau
+    # stack DB direstart terpisah.
+
+  web:
+    build:
+      context: ./src
+      dockerfile: Dockerfile.prod
+      target: web
+    image: ramz-web:prod
+    container_name: web-ramz
+    restart: unless-stopped
+    mem_limit: 64m
+    volumes:
+      # Read-only: Nginx hanya MEMBACA file unggahan untuk /storage/*.
+      - ramz_storage:/var/www/html/storage:ro
+    networks:
+      appnet:
+      edge:
+        aliases:
+          - web-ramz
+    depends_on:
+      - app
+
+  queue:
+    <<: *app-image
+    container_name: ramz-queue
+    restart: unless-stopped
+    mem_limit: 192m
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600 --memory=128
+    env_file:
+      - ./src/.env
+    environment:
+      RUN_MIGRATIONS: "0"
+    volumes:
+      - ramz_storage:/var/www/html/storage
+    networks:
+      appnet:
+      backend:
+        aliases:
+          - queue-ramz
+    depends_on:
+      app:
+        condition: service_started
+
+  scheduler:
+    <<: *app-image
+    container_name: ramz-scheduler
+    restart: unless-stopped
+    mem_limit: 128m
+    command: php artisan schedule:work
+    env_file:
+      - ./src/.env
+    environment:
+      RUN_MIGRATIONS: "0"
+    volumes:
+      - ramz_storage:/var/www/html/storage
+    networks:
+      appnet:
+      backend:
+        aliases:
+          - scheduler-ramz
+    depends_on:
+      app:
+        condition: service_started
+
+volumes:
+  ramz_storage:
+    name: ramz_storage
+
+networks:
+  appnet:
+    name: ramz-net
+  backend:
+    external: true
+    name: backend
+  edge:
+    external: true
+    name: edge

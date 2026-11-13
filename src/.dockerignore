@@ -1,0 +1,19 @@
+# Yang TIDAK ikut masuk image production.
+# .env production diberikan lewat env_file compose, bukan dibakar ke image.
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.github
+node_modules
+vendor
+storage/logs/*
+storage/framework/cache/data/*
+storage/framework/sessions/*
+storage/framework/views/*
+tests
+*.md
+docker-compose*.yml
+Dockerfile*
+deploy.sh
