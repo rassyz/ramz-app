@@ -38,3 +38,6 @@ yarn-error.log
 /boost.json
 /opencode.json
 /opencode.jsonc
+
+!/public/build/
+!/public/build/**

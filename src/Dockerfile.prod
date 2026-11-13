@@ -1,0 +1,102 @@
+# Dockerfile.prod — image production SLIM untuk satu app Laravel.
+# Ditulis dari nol; BUKAN turunan Dockerfile dev.
+# Yang SENGAJA tidak ada di sini: Node/npm, Xdebug, MongoDB, Memcached,
+# Imagick, Redis extension, openssh-server, cron, tools jaringan.
+#
+# Prasyarat SEBELUM build:
+#   1. Frontend SUDAH di-build di laptop/CI:  npm run build
+#      (folder public/build harus sudah ada; Dockerfile ini TIDAK menjalankan npm)
+#   2. File .env production TIDAK ikut ke image (lihat .dockerignore);
+#      .env diberikan ke container lewat env_file di docker-compose.prod.yml.
+#
+# Cara build (dari root proyek Laravel, di laptop/CI atau di VPS satu app
+# pada satu waktu):
+#   docker build -f Dockerfile.prod -t <nama-app>:prod .
+
+# ---------------------------------------------------------------------------
+# Stage 1: builder — pasang extension PHP + composer install --no-dev
+# ---------------------------------------------------------------------------
+FROM php:8.4-fpm AS builder
+
+ENV COMPOSER_MEMORY_LIMIT=-1 \
+    TZ=Asia/Jakarta
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
+        libwebp-dev libicu-dev libxml2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j"$(nproc)" \
+        pdo_mysql bcmath zip gd intl exif pcntl \
+    && docker-php-ext-enable opcache
+
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+
+WORKDIR /var/www/html
+
+# Vendor dulu (layer cache): hanya berubah bila composer.json/lock berubah.
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --optimize-autoloader \
+        --no-interaction --no-scripts
+
+# Baru sisa kode app (termasuk public/build hasil build di laptop/CI).
+COPY . .
+RUN composer dump-autoload --optimize --no-dev \
+    && php artisan package:discover --ansi || true
+
+# ---------------------------------------------------------------------------
+# Stage 2: web — Nginx yang MEMILIKI salinan folder public/ app ini.
+# Container Nginx terpisah tidak bisa membaca file di dalam container
+# php-fpm, jadi static assets harus ikut dibungkus ke image web.
+# Dipakai compose sebagai target build terpisah (target: web).
+# Symlink public/storage dibuat di sini; targetnya (volume storage bersama)
+# baru ter-mount saat runtime — pola yang sama seperti `artisan storage:link`
+# di container app.
+# ---------------------------------------------------------------------------
+FROM nginx:alpine AS web
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /var/www/html/public /var/www/html/public
+RUN mkdir -p /var/www/html/storage/app/public \
+    && ln -sfn /var/www/html/storage/app/public /var/www/html/public/storage
+
+# ---------------------------------------------------------------------------
+# Stage 3: runtime — hanya PHP-FPM + extension terkompilasi + kode jadi
+# ---------------------------------------------------------------------------
+FROM php:8.4-fpm AS runtime
+
+ENV TZ=Asia/Jakarta
+
+# Library runtime saja (tanpa paket -dev / compiler stage builder).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libzip4 libpng16-16t64 libjpeg62-turbo libfreetype6 libwebp7 \
+        libicu72 libxml2 \
+    && rm -rf /var/lib/apt/lists/* \
+    || (apt-get update && apt-get install -y --no-install-recommends \
+        libzip4 libpng16-16 libjpeg62-turbo libfreetype6 libwebp7 \
+        libicu72 libxml2 \
+    && rm -rf /var/lib/apt/lists/*)
+
+# Extension terkompilasi + konfigurasinya dari stage builder.
+COPY --from=builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
+COPY --from=builder /usr/local/etc/php/conf.d /usr/local/etc/php/conf.d
+
+RUN ln -snf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime \
+    && echo "Asia/Jakarta" > /etc/timezone
+
+WORKDIR /var/www/html
+COPY --from=builder --chown=www-data:www-data /var/www/html /var/www/html
+
+# Konfigurasi PHP production + pool PHP-FPM untuk VPS kecil.
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/zz-prod.ini
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+
+COPY docker/php/docker-entrypoint.prod.sh /usr/local/bin/docker-entrypoint.prod.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.prod.sh \
+    && mkdir -p storage/framework/cache storage/framework/sessions \
+                 storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+EXPOSE 9000
+ENTRYPOINT ["docker-entrypoint.prod.sh"]
+CMD ["php-fpm"]
