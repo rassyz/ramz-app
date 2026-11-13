@@ -3,13 +3,6 @@
 namespace App\Models;
 
 use App\Enums\StatusPengajuan;
-use App\Models\Dokumen;
-use App\Models\HasilPemeriksaan;
-use App\Models\Layanan;
-use App\Models\Pembayaran;
-use App\Models\RiwayatStatus;
-use App\Models\User;
-use App\Models\VerifikasiDokumen;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -29,10 +22,12 @@ use Illuminate\Support\Carbon;
  * @property string $nomor_invoice
  * @property StatusPengajuan $status
  * @property string|null $catatan
+ * @property Carbon|null $dokumen_fisik_diterima_at
+ * @property int|null $disetarakan_oleh
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['nomor_pengajuan', 'user_id', 'layanan_id', 'nomor_invoice', 'status', 'catatan'])]
+#[Fillable(['nomor_pengajuan', 'user_id', 'layanan_id', 'nomor_invoice', 'status', 'catatan', 'dokumen_fisik_diterima_at', 'disetarakan_oleh'])]
 class Pengajuan extends Model
 {
     protected $table = 'pengajuans';
@@ -44,6 +39,7 @@ class Pengajuan extends Model
     {
         return [
             'status' => StatusPengajuan::class,
+            'dokumen_fisik_diterima_at' => 'datetime',
         ];
     }
 
@@ -129,6 +125,17 @@ class Pengajuan extends Model
     public function verifikasiDokumens(): HasMany
     {
         return $this->hasMany(VerifikasiDokumen::class)->orderBy('created_at');
+    }
+
+    /**
+     * Staf yang menyetarakan dokumen fisik dengan data masukan
+     * nasabah (Fase 10) — null selama fisik belum diterima.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function disetarakanOleh(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'disetarakan_oleh');
     }
 
     /**

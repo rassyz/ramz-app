@@ -256,6 +256,35 @@ new #[Title('Detail Pengajuan')] class extends Component
     /**
      * Pemeriksaan manual oleh staf (Operator/Admin) dari halaman detail.
      */
+    /**
+     * Menandai dokumen fisik telah diterima dan disetarakan dengan
+     * data masukan nasabah (Fase 10, D5 — info lapangan LC). Penanda
+     * informatif sesuai alur lapangan; BUKAN gerbang verifikasi.
+     */
+    public function tandaiFisikDisetarakan(): void
+    {
+        $this->authorize('verify', $this->pengajuan);
+
+        if ($this->pengajuan->dokumen_fisik_diterima_at !== null
+            || in_array($this->pengajuan->status, [StatusPengajuan::Selesai, StatusPengajuan::Dibatalkan], true)) {
+            return;
+        }
+
+        $this->pengajuan->update([
+            'dokumen_fisik_diterima_at' => now(),
+            'disetarakan_oleh' => auth()->id(),
+        ]);
+        $this->pengajuan->load('disetarakanOleh');
+
+        app(LogAktivitasService::class)->catat(
+            LogAktivitas::DOKUMEN_FISIK_DISETARAKAN,
+            'Dokumen fisik pengajuan '.$this->pengajuan->nomor_pengajuan.' diterima dan disetarakan dengan data masukan nasabah.',
+            pengajuan: $this->pengajuan,
+        );
+
+        Flux::toast(variant: 'success', text: 'Dokumen fisik ditandai telah diterima dan disetarakan.');
+    }
+
     public function jalankanPemeriksaan(): void
     {
         abort_unless(auth()->user()->isAdmin() || auth()->user()->isOperator(), 403);
@@ -455,6 +484,32 @@ new #[Title('Detail Pengajuan')] class extends Component
             @endcan
         </div>
     @endif
+
+    <div class="mb-6 rounded-3xl bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-zinc-900">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+                <flux:heading level="2">Dokumen Fisik</flux:heading>
+                @if ($pengajuan->dokumen_fisik_diterima_at)
+                    <flux:text class="mt-1 block">
+                        Diterima &amp; disetarakan oleh {{ $pengajuan->disetarakanOleh?->name ?? '-' }}
+                        pada {{ $pengajuan->dokumen_fisik_diterima_at->format('d M Y H:i') }}.
+                    </flux:text>
+                @else
+                    <flux:text class="mt-1 block">Dokumen fisik belum diterima / belum disetarakan dengan data masukan nasabah.</flux:text>
+                @endif
+            </div>
+            @if ($pengajuan->dokumen_fisik_diterima_at)
+                <flux:badge color="green" size="lg">Fisik Disetarakan</flux:badge>
+            @else
+                <flux:badge color="amber" size="lg">Fisik Belum Diterima</flux:badge>
+                @can('verify', $pengajuan)
+                    @unless ($pengajuan->status === \App\Enums\StatusPengajuan::Selesai || $pengajuan->status === \App\Enums\StatusPengajuan::Dibatalkan)
+                        <flux:button variant="primary" class="w-full sm:w-auto" wire:click="tandaiFisikDisetarakan" wire:confirm="Tandai dokumen fisik pengajuan ini telah diterima dan disetarakan dengan data masukan nasabah?">Tandai Fisik Diterima &amp; Disetarakan</flux:button>
+                    @endunless
+                @endcan
+            @endif
+        </div>
+    </div>
 
     <div class="grid gap-6 lg:grid-cols-2">
         <div class="space-y-6">
@@ -678,7 +733,7 @@ new #[Title('Detail Pengajuan')] class extends Component
                         </span>
                         <flux:badge :color="$dokumen ? 'green' : 'amber'">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</flux:badge>
                     </div>
-                    <p class="mt-2 break-words text-sm text-zinc-500 dark:text-zinc-400">
+                    <p class="mt-2 wrap-break-word text-sm text-zinc-500 dark:text-zinc-400">
                         @if ($dokumen)
                             {{ $dokumen->nama_file_asli }} ({{ $dokumen->ukuranFormatted() }})
                         @else

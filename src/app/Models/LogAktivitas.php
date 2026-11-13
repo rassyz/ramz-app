@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Pengajuan;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -53,6 +52,8 @@ class LogAktivitas extends Model
 
     const PEMERIKSAAN_DIJALANKAN = 'pemeriksaan.dijalankan';
 
+    const DOKUMEN_FISIK_DISETARAKAN = 'dokumen_fisik.disetarakan';
+
     const PENGGUNA_DIBUAT = 'pengguna.dibuat';
 
     const PENGGUNA_DIUBAH = 'pengguna.diubah';
@@ -85,6 +86,7 @@ class LogAktivitas extends Model
             self::DOKUMEN_DIGANTI => 'Dokumen Diganti',
             self::DOKUMEN_DIHAPUS => 'Dokumen Dihapus',
             self::PEMERIKSAAN_DIJALANKAN => 'Pemeriksaan Dijalankan',
+            self::DOKUMEN_FISIK_DISETARAKAN => 'Dokumen Fisik Disetarakan',
             self::PENGGUNA_DIBUAT => 'Pengguna Dibuat',
             self::PENGGUNA_DIUBAH => 'Pengguna Diubah',
             self::PENGGUNA_DIHAPUS => 'Pengguna Dihapus',

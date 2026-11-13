@@ -17,9 +17,9 @@
             }
         </style>
     </head>
-    <body class="min-h-screen bg-[#f1f1f8] text-zinc-900 antialiased">
+    <body class="min-h-screen bg-lavender text-zinc-900 antialiased">
         {{-- ============ NAVBAR ============ --}}
-        <header id="navbar" class="sticky top-0 z-40 border-b border-white/60 bg-[#f1f1f8]/85 backdrop-blur transition-shadow duration-300">
+        <header id="navbar" class="sticky top-0 z-40 border-b border-white/60 bg-lavender/85 backdrop-blur transition-shadow duration-300">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">
                     <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-[#4353ff]">
@@ -43,10 +43,10 @@
                 <div class="hidden items-center gap-2 lg:flex">
                     @auth
                         <span class="mr-1 text-sm text-zinc-500">{{ auth()->user()->name }} · {{ auth()->user()->role->label() }}</span>
-                        <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3543d6] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
+                        <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">Masuk</a>
-                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#3543d6] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Daftar sebagai Nasabah</a>
+                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Daftar sebagai Nasabah</a>
                     @endauth
                 </div>
 
@@ -77,16 +77,16 @@
 
         {{-- ============ HERO ============ --}}
         <section class="relative overflow-hidden">
-            <div class="pola-titik pointer-events-none absolute inset-x-0 top-0 h-[540px] opacity-70 [mask-image:linear-gradient(to_bottom,black,transparent)]"></div>
+            <div class="pola-titik pointer-events-none absolute inset-x-0 top-0 h-135 opacity-70 mask-[linear-gradient(to_bottom,black,transparent)]"></div>
             <div class="pointer-events-none absolute -left-32 top-10 h-80 w-80 rounded-full bg-[#4353ff]/15 blur-3xl"></div>
             <div class="pointer-events-none absolute -right-32 top-40 h-80 w-80 rounded-full bg-violet-400/20 blur-3xl"></div>
-            <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-[#dfe5ff]/70 to-transparent"></div>
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-96 bg-linear-to-b from-[#dfe5ff]/70 to-transparent"></div>
 
             <div class="relative mx-auto max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:px-8 lg:pt-20">
                 <div class="mx-auto max-w-3xl text-center">
                     <span class="inline-block rounded-full bg-white px-3.5 py-1.5 text-xs font-medium text-[#4353ff] shadow-sm ring-1 ring-zinc-950/5">Sentra Layanan Perdagangan &amp; Pembayaran Internasional</span>
                     <h1 class="mt-5 text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-                        Monitoring Layanan Perdagangan &amp; Pembayaran Internasional dalam <span class="bg-gradient-to-r from-[#4353ff] to-[#8b5cf6] bg-clip-text text-transparent">Satu Sistem Terpantau</span>
+                        Monitoring Layanan Perdagangan &amp; Pembayaran Internasional dalam <span class="bg-linear-to-r from-[#4353ff] to-[#8b5cf6] bg-clip-text text-transparent">Satu Sistem Terpantau</span>
                     </h1>
                     <p class="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-zinc-600">
                         Pengajuan layanan, pemeriksaan bukti berbasis aturan, verifikasi operator, dan notifikasi status —
@@ -94,9 +94,9 @@
                     </p>
                     <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
                         @auth
-                            <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-[#3543d6] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
+                            <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
                         @else
-                            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-[#3543d6] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">
+                            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">
                                 Mulai Pengajuan
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M21 12H3" /></svg>
                             </a>
@@ -136,7 +136,7 @@
                             <span class="rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-medium text-[#4353ff]">30 Hari Terakhir</span>
                         </div>
                         <div class="mt-5 grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-2xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-4 text-white">
+                            <div class="rounded-2xl bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-4 text-white">
                                 <p class="text-xs text-white/75">Total Pengajuan</p>
                                 <p class="mt-1 text-3xl font-bold">128</p>
                                 <span class="mt-2 inline-block rounded-full bg-white/20 px-2 py-0.5 text-[11px]">+12.5% dari periode sebelumnya</span>
@@ -219,7 +219,7 @@
                     <h3 class="mt-4 font-semibold">Dokumen Tersebar &amp; Manual</h3>
                     <p class="mt-2 text-sm leading-relaxed text-zinc-600">Berkas pengajuan berpindah secara manual sehingga kelengkapannya sulit dipastikan dan riwayatnya tidak terdokumentasi dalam satu tempat.</p>
                 </div>
-                <div class="reveal rounded-3xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.30)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(67,83,255,0.40)]">
+                <div class="reveal rounded-3xl bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.30)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(67,83,255,0.40)]">
                     <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
                     </span>
@@ -307,7 +307,7 @@
                         <div>
                             <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Dokumen yang diunggah</h3>
                             <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                                @foreach (['Invoice', 'Purchase Order', 'Packing List', 'Bill of Lading'] as $dok)
+                                @foreach (['Bill of Exchange (BOE)', 'Invoice', 'Packing List', 'Bill of Lading', 'Insurance'] as $dok)
                                     <label class="flex cursor-pointer items-center gap-2.5 rounded-2xl border border-zinc-200 px-4 py-3 text-sm transition hover:border-[#4353ff] hover:bg-[#f7f8ff]">
                                         <input type="checkbox" class="dok-simulasi size-4 accent-[#4353ff]" value="{{ $dok }}" checked>
                                         {{ $dok }} <span class="text-xs text-zinc-400">(wajib)</span>
@@ -338,7 +338,7 @@
                         </div>
 
                         <div class="flex flex-wrap gap-2">
-                            <button id="tombol-periksa" class="rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#3543d6] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">Periksa</button>
+                            <button id="tombol-periksa" class="rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">Periksa</button>
                             <button id="tombol-atur-ulang" class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-zinc-600 ring-1 ring-zinc-200 transition hover:text-[#4353ff] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">Atur Ulang</button>
                         </div>
                     </div>
@@ -369,7 +369,7 @@
                     ['4', 'Status & Notifikasi Berjalan', 'Nasabah menerima pemberitahuan, dan seluruh proses tercatat untuk admin.'],
                 ] as [$no, $judul, $isi])
                     <div class="reveal relative rounded-3xl bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(0,0,0,0.08)]">
-                        <span class="relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4353ff] text-lg font-bold text-white shadow-[0_8px_20px_rgb(67,83,255,0.40)] ring-4 ring-[#f1f1f8]">{{ $no }}</span>
+                        <span class="relative z-10 flex h-11 w-11 items-center justify-center rounded-full bg-[#4353ff] text-lg font-bold text-white shadow-[0_8px_20px_rgb(67,83,255,0.40)] ring-4 ring-lavender">{{ $no }}</span>
                         <h3 class="mt-4 font-semibold">{{ $judul }}</h3>
                         <p class="mt-2 text-sm leading-relaxed text-zinc-600">{{ $isi }}</p>
                     </div>
@@ -389,7 +389,7 @@
                         <span class="inline-block rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-semibold text-[#4353ff]">Nasabah</span>
                         <p class="mt-3 text-sm leading-relaxed text-zinc-600">Mendaftar secara mandiri, mengajukan layanan, mengunggah dan memperbaiki dokumen, serta memantau status dan riwayat pengajuannya sendiri.</p>
                     </div>
-                    <div class="reveal rounded-3xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.30)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(67,83,255,0.40)]">
+                    <div class="reveal rounded-3xl bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.30)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(67,83,255,0.40)]">
                         <span class="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Operator</span>
                         <p class="mt-3 text-sm leading-relaxed text-white/85">Memantau antrean pengajuan, meninjau hasil checker, memverifikasi dokumen, memperbarui status pengajuan dan pembayaran, serta memberi catatan perbaikan.</p>
                     </div>
@@ -404,10 +404,10 @@
         {{-- ============ TEKNOLOGI ============ --}}
         <section id="teknologi" class="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8">
             <div class="reveal relative overflow-hidden rounded-3xl bg-zinc-900 p-8 text-white sm:p-10">
-                <div class="pola-titik pointer-events-none absolute inset-0 opacity-20 [filter:invert(1)]"></div>
+                <div class="pola-titik pointer-events-none absolute inset-0 opacity-20 filter-[invert(1)]"></div>
                 <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#4353ff]/30 blur-3xl"></div>
                 <div class="relative">
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-[#b9c2ff]">Teknologi</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-primary-soft">Teknologi</p>
                     <h2 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">Dibangun dengan Teknologi Web Modern</h2>
                     <p class="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">Dikembangkan dengan metode Rapid Application Development (RAD) — dibangun bertahap per kebutuhan fungsional, diuji pada setiap tahapnya.</p>
                     <div class="mt-7 flex flex-wrap gap-2.5">
@@ -448,8 +448,8 @@
 
         {{-- ============ CTA PENUTUP ============ --}}
         <section class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-            <div class="reveal relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-8 text-center text-white shadow-[0_24px_60px_rgb(67,83,255,0.30)] sm:p-12">
-                <div class="pola-titik pointer-events-none absolute inset-0 opacity-25 [filter:invert(1)]"></div>
+            <div class="reveal relative overflow-hidden rounded-3xl bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-8 text-center text-white shadow-[0_24px_60px_rgb(67,83,255,0.30)] sm:p-12">
+                <div class="pola-titik pointer-events-none absolute inset-0 opacity-25 filter-[invert(1)]"></div>
                 <div class="relative">
                     <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight">Siap Mengajukan Layanan dengan Proses yang Terpantau?</h2>
                     <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/85">Daftar sebagai nasabah dan ajukan layanan perdagangan atau pembayaran internasional Anda — setiap tahapnya dapat Anda pantau sampai selesai.</p>
@@ -515,7 +515,7 @@
         </footer>
 
         {{-- Tombol kembali ke atas --}}
-        <button id="tombol-ke-atas" class="fixed bottom-6 right-6 z-40 flex h-11 w-11 translate-y-24 items-center justify-center rounded-full bg-[#4353ff] text-white shadow-[0_12px_32px_rgb(67,83,255,0.40)] transition-all duration-300 hover:bg-[#3543d6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2" aria-label="Kembali ke atas">
+        <button id="tombol-ke-atas" class="fixed bottom-6 right-6 z-40 flex h-11 w-11 translate-y-24 items-center justify-center rounded-full bg-[#4353ff] text-white shadow-[0_12px_32px_rgb(67,83,255,0.40)] transition-all duration-300 hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2" aria-label="Kembali ke atas">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="size-5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75 12 8.25l7.5 7.5" /></svg>
         </button>
 
@@ -581,7 +581,7 @@
             const norm = s => (s || '').trim().toLowerCase();
 
             function jalankanPemeriksaan() {
-                const wajib = ['Invoice', 'Purchase Order', 'Packing List', 'Bill of Lading'];
+                const wajib = ['Bill of Exchange (BOE)', 'Invoice', 'Packing List', 'Bill of Lading', 'Insurance'];
                 const tercentang = [...document.querySelectorAll('.dok-simulasi:checked')].map(i => i.value);
                 const baris = [];
                 let lengkap = true;

@@ -107,11 +107,12 @@ new #[Title('Pengajuan Saya')] class extends Component
 
     <flux:separator class="mt-4 mb-6" />
 
-    <div class="grid gap-8 lg:grid-cols-3">
-        <div class="lg:col-span-1">
+    <div class="space-y-8">
+        <div>
             <flux:heading level="2">Buat Pengajuan Baru</flux:heading>
 
             <form wire:submit="buatPengajuan" class="mt-4 space-y-4">
+                <div class="grid gap-4 sm:grid-cols-2">
                 <flux:select wire:model.live="layanan_id" label="Jenis Layanan" placeholder="Pilih layanan">
                     @foreach ($this->layanansAktif as $layanan)
                         <option value="{{ $layanan->id }}">{{ $layanan->nama }}</option>
@@ -119,7 +120,7 @@ new #[Title('Pengajuan Saya')] class extends Component
                 </flux:select>
 
                 @if ($this->layananTerpilih)
-                    <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+                    <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:col-span-2">
                         <flux:text class="font-medium">Dokumen yang wajib disiapkan:</flux:text>
                         <ul class="mt-2 list-inside list-disc space-y-1">
                             @forelse ($this->layananTerpilih->persyaratan_dokumen ?? [] as $syarat)
@@ -142,11 +143,13 @@ new #[Title('Pengajuan Saya')] class extends Component
                     @endforeach
                 </flux:select>
 
+                </div>
+
                 <flux:button variant="primary" type="submit" class="w-full">Kirim Pengajuan</flux:button>
             </form>
         </div>
 
-        <div class="lg:col-span-2">
+        <div>
             <flux:heading level="2">Daftar Pengajuan</flux:heading>
 
 
