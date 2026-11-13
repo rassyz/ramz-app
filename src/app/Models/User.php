@@ -3,11 +3,17 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Models\LogAktivitas;
+use App\Models\Notifikasi;
+use App\Models\Pengajuan;
+use App\Models\PreferensiDashboard;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -20,6 +26,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $id
  * @property string $name
  * @property string $email
+ * @property string|null $nomor_hp
  * @property UserRole $role
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -30,7 +37,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'nomor_hp', 'password', 'role'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
@@ -82,5 +89,67 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function isNasabah(): bool
     {
         return $this->role === UserRole::Nasabah;
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Relasi pengajuan (Fase 2)
+     |--------------------------------------------------------------------------
+     */
+
+    /**
+     * Pengajuan layanan milik pengguna ini (sebagai nasabah).
+     *
+     * @return HasMany<Pengajuan, $this>
+     */
+    public function pengajuans(): HasMany
+    {
+        return $this->hasMany(Pengajuan::class);
+    }
+
+    /*
+     |--------------------------------------------------------------------------
+     | Preferensi dashboard (Fase 5)
+     |--------------------------------------------------------------------------
+     */
+
+    /**
+     * Notifikasi milik pengguna ini sebagai penerima (KF-11).
+     *
+     * @return HasMany<Notifikasi, $this>
+     */
+    public function notifikasis(): HasMany
+    {
+        return $this->hasMany(Notifikasi::class);
+    }
+
+    /**
+     * Catatan log aktivitas dengan pengguna ini sebagai pelaku (KF-14).
+     *
+     * @return HasMany<LogAktivitas, $this>
+     */
+    public function logAktivitas(): HasMany
+    {
+        return $this->hasMany(LogAktivitas::class);
+    }
+
+    /**
+     * Preferensi personalisasi dashboard tersimpan milik pengguna ini.
+     *
+     * @return HasOne<PreferensiDashboard, $this>
+     */
+    public function preferensiDashboard(): HasOne
+    {
+        return $this->hasOne(PreferensiDashboard::class);
+    }
+
+    /**
+     * Preferensi dashboard efektif: record tersimpan bila ada, atau
+     * instance baru berisi nilai bawaan model bila belum pernah
+     * menyimpan (tanpa menulis ke basis data).
+     */
+    public function preferensiDashboardAtauBawaan(): PreferensiDashboard
+    {
+        return $this->preferensiDashboard ?? new PreferensiDashboard;
     }
 }
