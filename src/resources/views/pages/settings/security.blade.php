@@ -187,8 +187,8 @@ new #[Title('Security settings')] class extends Component {
 
     <flux:heading level="2" class="sr-only">{{ __('Security settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
+    <x-pages::settings.layout :heading="__('Kata Sandi')" :subheading="__('Pastikan akun Anda memakai kata sandi yang panjang dan acak agar tetap aman')">
+        <form method="POST" wire:submit="updatePassword" class="space-y-6">
             <flux:input
                 wire:model="current_password"
                 :label="__('Current password')"
@@ -225,7 +225,7 @@ new #[Title('Security settings')] class extends Component {
 
         {{-- @chisel-2fa --}}
         @if ($canManageTwoFactor)
-            <section class="mt-12">
+            <section class="mt-8 border-t border-line pt-6 dark:border-night-line">
                 <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
                 <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
 
@@ -272,16 +272,16 @@ new #[Title('Security settings')] class extends Component {
 
         {{-- @chisel-passkeys --}}
         @if ($canManagePasskeys)
-            <section class="mt-12">
+            <section class="mt-8 border-t border-line pt-6 dark:border-night-line">
                 <flux:heading>{{ __('Passkeys') }}</flux:heading>
                 <flux:subheading>{{ __('Manage your passkeys for passwordless sign-in') }}</flux:subheading>
 
                 <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
-                    <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                    <div class="overflow-hidden rounded-[14px] border border-line dark:border-night-line">
                         @forelse ($passkeys as $passkey)
-                            <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-zinc-200 dark:border-zinc-700' : '' }}">
+                            <div class="flex items-center justify-between p-4 {{ ! $loop->last ? 'border-b border-line dark:border-night-line' : '' }}">
                                 <div class="flex items-center gap-4">
-                                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+                                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-soft dark:bg-night-soft">
                                         <flux:icon.key class="size-5 text-zinc-500 dark:text-zinc-400" />
                                     </div>
                                     <div class="space-y-1">
@@ -312,7 +312,7 @@ new #[Title('Security settings')] class extends Component {
                             </div>
                         @empty
                             <div class="p-8 text-center">
-                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-soft dark:bg-night-soft">
                                     <flux:icon.key class="size-7 text-zinc-400 dark:text-zinc-500" />
                                 </div>
                                 <p class="font-medium">{{ __('No passkeys yet') }}</p>

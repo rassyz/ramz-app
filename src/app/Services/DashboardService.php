@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\HasilDetail;
 use App\Enums\StatusHasilPemeriksaan;
 use App\Enums\StatusPengajuan;
+use App\Models\DetailPemeriksaan;
 use App\Models\HasilPemeriksaan;
 use App\Models\Layanan;
 use App\Models\Dokumen;
@@ -12,6 +14,7 @@ use App\Models\RiwayatStatus;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 /**
  * Agregasi data dashboard monitoring (KF-09). Seluruh method menerima
@@ -145,7 +148,7 @@ class DashboardService
      * Persen bernilai null bila periode sebelumnya nol: bendera 'baru'
      * membedakan "ada aktivitas dari ketiadaan" dari "tetap kosong".
      *
-     * @return array{total: array{nilai: int, persen: float|null, baru: bool}, selesai: array{nilai: int, persen: float|null, baru: bool}}
+     * @return array{total: array{nilai: int, persen: float|null, baru: bool}, selesai: array{nilai: int, persen: float|null, baru: bool}, menunggu: array{nilai: int, persen: float|null, baru: bool}, kesesuaian: array{nilai: float, persen: float|null, baru: bool}}
      */
     public function perubahanPeriode(User $user, CarbonInterface $mulai, CarbonInterface $selesai): array
     {
@@ -162,9 +165,23 @@ class DashboardService
             'baru' => $nilaiDulu === 0 && $nilaiKini > 0,
         ];
 
+        // Fase 13: delta kesesuaian checker dihitung sebagai selisih
+        // poin persentase persen_sesuai antarperiode.
+        $pemeriksaanKini = $this->ringkasanPemeriksaan($user, $mulai, $selesai);
+        $pemeriksaanDulu = $this->ringkasanPemeriksaan($user, $mulaiSebelumnya, $selesaiSebelumnya);
+        $kesesuaian = [
+            'nilai' => $pemeriksaanKini['persen_sesuai'],
+            'persen' => $pemeriksaanDulu['total'] > 0
+                ? round($pemeriksaanKini['persen_sesuai'] - $pemeriksaanDulu['persen_sesuai'], 1)
+                : null,
+            'baru' => $pemeriksaanDulu['total'] === 0 && $pemeriksaanKini['total'] > 0,
+        ];
+
         return [
             'total' => $hitung($kini['total'], $dulu['total']),
             'selesai' => $hitung($kini['selesai'], $dulu['selesai']),
+            'menunggu' => $hitung($kini['menunggu_verifikasi'], $dulu['menunggu_verifikasi']),
+            'kesesuaian' => $kesesuaian,
         ];
     }
 
@@ -216,6 +233,90 @@ class DashboardService
             'tidak_sesuai' => (clone $query)->where('status', StatusHasilPemeriksaan::TidakSesuai)->count(),
             'belum' => (clone $query)->where('status', StatusHasilPemeriksaan::BelumDapatDiperiksa)->count(),
             'persen_sesuai' => $total > 0 ? round($sesuai / $total * 100, 1) : 0.0,
+        ];
+    }
+
+    /**
+     * Aturan checker yang paling sering gagal dalam periode (Fase 13,
+     * insight dashboard). Dihitung dari run pemeriksaan TERBARU setiap
+     * pengajuan dalam periode agar pengajuan yang diperiksa berulang
+     * tidak terhitung ganda.
+     *
+     * @return list<array{kode: string|null, nama: string, jumlah_gagal: int}>
+     */
+    public function aturanSeringGagal(User $user, CarbonInterface $mulai, CarbonInterface $selesai, int $batas = 3): array
+    {
+        $hasilTerbaru = HasilPemeriksaan::query()
+            ->selectRaw('MAX(id) as id')
+            ->whereBetween('created_at', [$mulai, $selesai])
+            ->when($user->isNasabah(), fn(Builder $q) => $q->whereHas(
+                'pengajuan',
+                fn(Builder $sub) => $sub->where('user_id', $user->id)
+            ))
+            ->groupBy('pengajuan_id');
+
+        return DetailPemeriksaan::query()
+            ->joinSub($hasilTerbaru, 'terbaru', fn($join) => $join->on('detail_pemeriksaans.hasil_pemeriksaan_id', '=', 'terbaru.id'))
+            ->leftJoin('aturan_validasis', 'aturan_validasis.id', '=', 'detail_pemeriksaans.aturan_id')
+            ->where('detail_pemeriksaans.hasil', HasilDetail::TidakSesuai)
+            ->groupBy('detail_pemeriksaans.nama_pemeriksaan', 'aturan_validasis.kode')
+            ->selectRaw('detail_pemeriksaans.nama_pemeriksaan as nama, aturan_validasis.kode as kode, COUNT(*) as jumlah_gagal')
+            ->orderByDesc('jumlah_gagal')
+            ->limit($batas)
+            ->get()
+            ->map(fn($baris) => [
+                'kode' => $baris->kode,
+                'nama' => $baris->nama,
+                'jumlah_gagal' => (int) $baris->jumlah_gagal,
+            ])
+            ->all();
+    }
+
+    /**
+     * Pengajuan terbaru milik nasabah untuk tile pelacakan dashboard:
+     * paling baru dibuat dan belum dibatalkan, beserta hasil
+     * pemeriksaan terakhir dan rinciannya. Di luar cakupan periode.
+     */
+    public function lacakTerbaru(User $user): ?Pengajuan
+    {
+        return Pengajuan::query()
+            ->where('user_id', $user->id)
+            ->where('status', '!=', StatusPengajuan::Dibatalkan)
+            ->with([
+                'layanan',
+                'hasilPemeriksaans' => fn($q) => $q->latest()->limit(1)->with('details'),
+            ])
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Seluruh pengajuan nasabah yang menunggu perbaikan, terlama dulu.
+     *
+     * @return Collection<int, Pengajuan>
+     */
+    public function perluPerbaikan(User $user): Collection
+    {
+        return Pengajuan::query()
+            ->where('user_id', $user->id)
+            ->where('status', StatusPengajuan::PerluPerbaikan)
+            ->oldest()
+            ->get();
+    }
+
+    /**
+     * Jumlah pengajuan aktif nasabah saat ini (di luar cakupan
+     * periode): aktif = belum selesai dan belum dibatalkan.
+     *
+     * @return array{aktif: int, menunggu: int}
+     */
+    public function jumlahAktif(User $user): array
+    {
+        $dasar = Pengajuan::query()->where('user_id', $user->id);
+
+        return [
+            'aktif' => (clone $dasar)->whereNotIn('status', [StatusPengajuan::Selesai, StatusPengajuan::Dibatalkan])->count(),
+            'menunggu' => (clone $dasar)->where('status', StatusPengajuan::MenungguVerifikasi)->count(),
         ];
     }
 

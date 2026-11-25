@@ -147,60 +147,60 @@ new class extends Component
         };
     }
 }; ?>
-
-<div>
+<section class="tile md:col-span-2 xl:col-span-4">
     @if (auth()->user()->isOperator())
-        <flux:separator class="my-8" />
-
-        <div>
-            <flux:heading level="2">Verifikasi & Pengelolaan — Operator</flux:heading>
-            <flux:subheading>Keputusan dan pengelolaan status hanya dapat dilakukan oleh operator.</flux:subheading>
-
-            <div class="mt-4 grid gap-6 lg:grid-cols-2">
-                @can('verify', $pengajuan)
-                    <form wire:submit="simpanKeputusan" class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <flux:heading level="3">Keputusan Verifikasi</flux:heading>
-
-                        @if ($this->hasilTerakhir)
-                            <flux:text>Acuan hasil pemeriksaan terakhir: <flux:badge :color="$this->hasilTerakhir->status->color()">{{ $this->hasilTerakhir->status->label() }}</flux:badge> ({{ $this->hasilTerakhir->created_at->format('d M Y H:i') }})</flux:text>
-                        @else
-                            <flux:text>Perhatian: checker belum pernah berjalan untuk pengajuan ini. Keputusan tetap dapat diambil berdasarkan pemeriksaan dokumen secara langsung.</flux:text>
-                        @endif
-
-                        <flux:radio.group wire:model="keputusan" label="Keputusan" required>
-                            <flux:radio value="terverifikasi" label="Terverifikasi" />
-                            <flux:radio value="perlu_perbaikan" label="Perlu Perbaikan" />
-                        </flux:radio.group>
-
-                        <flux:textarea wire:model="catatanVerifikasi" label="Catatan (wajib untuk Perlu Perbaikan)" rows="3" />
-                        @error('catatanVerifikasi')
-                            <flux:text class="text-red-500">{{ $message }}</flux:text>
-                        @enderror
-
-                        <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Simpan Keputusan</flux:button>
-                    </form>
-                @endcan
-
-                <div class="space-y-6">
-                    @can('updateStatus', $pengajuan)
-                        @if ($pengajuan->status === \App\Enums\StatusPengajuan::Terverifikasi)
-                            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <flux:heading level="3">Kelola Status</flux:heading>
-                                <flux:text class="mt-2 block">Pengajuan sudah terverifikasi dan dapat mulai diproses.</flux:text>
-                                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="mintaKonfirmasiMajukan('diproses')">Mulai Diproses</flux:button>
-                            </div>
-                        @elseif ($pengajuan->status === \App\Enums\StatusPengajuan::Diproses)
-                            <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                                <flux:heading level="3">Kelola Status</flux:heading>
-                                <flux:text class="mt-2 block">Pengajuan sedang diproses dan dapat ditandai selesai.</flux:text>
-                                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="mintaKonfirmasiMajukan('selesai')">Tandai Selesai</flux:button>
-                            </div>
-                        @endif
-                    @endcan
-
-                </div>
-            </div>
+        <div class="mb-4 flex items-center justify-between gap-2.5">
+            <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Verifikasi &amp; Pengelolaan — Operator</h2>
         </div>
+        <p class="-mt-2.5 mb-4 text-[13px] text-mist dark:text-zinc-400">Keputusan dan pengelolaan status hanya dapat dilakukan oleh operator.</p>
+
+        @php
+            $pillHasilVerifikasi = [
+                'sesuai' => 'pill-green',
+                'tidak_sesuai' => 'pill-red',
+                'belum_dapat_diperiksa' => 'pill-zinc',
+            ];
+        @endphp
+
+        @can('verify', $pengajuan)
+            <form wire:submit="simpanKeputusan" class="space-y-4">
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Keputusan Verifikasi</h3>
+
+                @if ($this->hasilTerakhir)
+                    <p class="text-[13px] leading-normal text-zinc-600 dark:text-zinc-300">Acuan hasil pemeriksaan terakhir: <span class="pill {{ $pillHasilVerifikasi[$this->hasilTerakhir->status->value] ?? 'pill-zinc' }}">{{ $this->hasilTerakhir->status->label() }}</span> ({{ $this->hasilTerakhir->created_at->format('d M Y H:i') }})</p>
+                @else
+                    <p class="text-[13px] leading-normal text-zinc-600 dark:text-zinc-300">Perhatian: checker belum pernah berjalan untuk pengajuan ini. Keputusan tetap dapat diambil berdasarkan pemeriksaan dokumen secara langsung.</p>
+                @endif
+
+                <flux:radio.group wire:model="keputusan" label="Keputusan" required>
+                    <flux:radio value="terverifikasi" label="Terverifikasi" description="Dokumen sesuai ketentuan LC" />
+                    <flux:radio value="perlu_perbaikan" label="Perlu Perbaikan" description="Nasabah diminta memperbaiki dokumen" />
+                </flux:radio.group>
+
+                <flux:textarea wire:model="catatanVerifikasi" label="Catatan (wajib untuk Perlu Perbaikan)" rows="3" />
+                @error('catatanVerifikasi')
+                    <flux:text class="text-red-500">{{ $message }}</flux:text>
+                @enderror
+
+                <flux:button variant="primary" type="submit" class="w-full">Simpan Keputusan</flux:button>
+            </form>
+        @endcan
+
+        @can('updateStatus', $pengajuan)
+            @if ($pengajuan->status === \App\Enums\StatusPengajuan::Terverifikasi)
+                <div class="mt-4 rounded-[14px] bg-soft p-3.25 dark:bg-night-soft">
+                    <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Kelola Status</h3>
+                    <p class="mt-1.5 text-[13px] leading-normal text-zinc-600 dark:text-zinc-300">Pengajuan sudah terverifikasi dan dapat mulai diproses.</p>
+                    <flux:button variant="primary" class="mt-3 w-full" wire:click="mintaKonfirmasiMajukan('diproses')">Mulai Diproses</flux:button>
+                </div>
+            @elseif ($pengajuan->status === \App\Enums\StatusPengajuan::Diproses)
+                <div class="mt-4 rounded-[14px] bg-soft p-3.25 dark:bg-night-soft">
+                    <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Kelola Status</h3>
+                    <p class="mt-1.5 text-[13px] leading-normal text-zinc-600 dark:text-zinc-300">Pengajuan sedang diproses dan dapat ditandai selesai.</p>
+                    <flux:button variant="primary" class="mt-3 w-full" wire:click="mintaKonfirmasiMajukan('selesai')">Tandai Selesai</flux:button>
+                </div>
+            @endif
+        @endcan
     @endif
 
     @if ($this->detailKonfirmasi)
@@ -217,4 +217,4 @@ new class extends Component
             </div>
         </flux:modal>
     @endif
-</div>
+</section>

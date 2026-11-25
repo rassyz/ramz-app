@@ -66,80 +66,53 @@ new class extends Component
         unset($this->hasilTerakhir, $this->riwayatPemeriksaan);
     }
 }; ?>
-
-<div>
-    <flux:separator class="my-8" />
-
-    <div>
-        <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-                <flux:heading level="2">Hasil Pemeriksaan — Rule-Based Evidence Checker</flux:heading>
-                <flux:subheading>Pemeriksaan kelengkapan dokumen dan pencocokan data terstruktur. Hasil ini bersifat pendukung; keputusan verifikasi akhir tetap pada Operator.</flux:subheading>
-            </div>
-            @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
-                <flux:button wire:click="jalankanPemeriksaan">Jalankan Pemeriksaan</flux:button>
-            @endif
-        </div>
-
-        @if ($this->hasilTerakhir)
-            @php $hasil = $this->hasilTerakhir; @endphp
-            <div class="mt-4 flex flex-wrap items-center gap-3">
-                <flux:badge size="lg" :color="$hasil->status->color()">{{ $hasil->status->label() }}</flux:badge>
-                <flux:text>{{ $hasil->total_sesuai }} sesuai, {{ $hasil->total_tidak_sesuai }} tidak sesuai, dari {{ $hasil->total_pemeriksaan }} pemeriksaan — {{ $hasil->created_at->format('d M Y H:i') }}</flux:text>
-            </div>
-
-            {{-- Detail pemeriksaan (mobile) — Fase 8.2 --}}
-            <div class="mt-4 space-y-3 lg:hidden">
-                @foreach ($hasil->details as $detail)
-                    <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700" wire:key="detail-mobile-{{ $detail->id }}">
-                        <div class="flex items-start justify-between gap-3">
-                            <span class="font-medium">{{ $detail->nama_pemeriksaan }}</span>
-                            <flux:badge :color="$detail->hasil->color()">{{ $detail->hasil->label() }}</flux:badge>
-                        </div>
-                        <dl class="mt-2 space-y-1 text-sm">
-                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nilai Pengajuan</dt><dd class="break-all text-right font-medium">{{ $detail->nilai_pengajuan ?? '-' }}</dd></div>
-                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nilai Dokumen</dt><dd class="break-all text-right font-medium">{{ $detail->nilai_dokumen ?? '-' }}</dd></div>
-                        </dl>
-                        @if ($detail->keterangan)
-                            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">{{ $detail->keterangan }}</p>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-
-            <div class="mt-4 hidden lg:block">
-            <flux:table class="mt-4">
-                <flux:table.columns>
-                    <flux:table.column>Pemeriksaan</flux:table.column>
-                    <flux:table.column>Nilai Pengajuan</flux:table.column>
-                    <flux:table.column>Nilai Dokumen</flux:table.column>
-                    <flux:table.column>Hasil</flux:table.column>
-                    <flux:table.column>Keterangan</flux:table.column>
-                </flux:table.columns>
-                <flux:table.rows>
-                    @foreach ($hasil->details as $detail)
-                        <flux:table.row :key="$detail->id">
-                            <flux:table.cell class="font-medium">{{ $detail->nama_pemeriksaan }}</flux:table.cell>
-                            <flux:table.cell>{{ $detail->nilai_pengajuan ?? '-' }}</flux:table.cell>
-                            <flux:table.cell>{{ $detail->nilai_dokumen ?? '-' }}</flux:table.cell>
-                            <flux:table.cell><flux:badge :color="$detail->hasil->color()">{{ $detail->hasil->label() }}</flux:badge></flux:table.cell>
-                            <flux:table.cell>{{ $detail->keterangan }}</flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-            </div>
-
-            @if ($this->riwayatPemeriksaan->count() > 1)
-                <flux:text class="mt-4 block font-medium">Riwayat pemeriksaan:</flux:text>
-                <div class="mt-2 flex flex-wrap gap-2">
-                    @foreach ($this->riwayatPemeriksaan as $riwayatHasil)
-                        <flux:badge :color="$riwayatHasil->status->color()">{{ $riwayatHasil->created_at->format('d M H:i') }} — {{ $riwayatHasil->status->label() }}</flux:badge>
-                    @endforeach
-                </div>
-            @endif
-        @else
-            <flux:text class="mt-4 block">Belum ada pemeriksaan. Pemeriksaan berjalan otomatis setiap dokumen diunggah, diganti, atau dihapus.</flux:text>
+<section class="tile md:col-span-2 xl:col-span-8">
+    <div class="flex flex-wrap items-center justify-between gap-2.5">
+        <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Hasil Pemeriksaan</h2>
+        @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
+            <button type="button" class="btn btn-primary btn-small" wire:click="jalankanPemeriksaan">Jalankan Pemeriksaan</button>
         @endif
     </div>
-</div>
+    <p class="mt-1.5 mb-4 text-[13px] text-mist dark:text-zinc-400">Pemeriksaan kelengkapan dokumen dan pencocokan data terstruktur oleh Rule-Based Evidence Checker. Hasil ini bersifat pendukung; keputusan verifikasi akhir tetap pada Operator.</p>
+
+    @if ($this->hasilTerakhir)
+        @php
+            $hasil = $this->hasilTerakhir;
+            $pillHasil = [
+                'sesuai' => 'pill-green',
+                'tidak_sesuai' => 'pill-red',
+                'belum_dapat_diperiksa' => 'pill-zinc',
+            ];
+        @endphp
+        <div class="mb-2 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <span class="pill {{ $pillHasil[$hasil->status->value] ?? 'pill-zinc' }}">{{ $hasil->status->label() }}</span>
+            <span class="text-[13px] text-mist dark:text-zinc-400">{{ $hasil->total_sesuai }} sesuai, {{ $hasil->total_tidak_sesuai }} tidak sesuai, dari {{ $hasil->total_pemeriksaan }} pemeriksaan — {{ $hasil->created_at->format('d M Y H:i') }}</span>
+        </div>
+
+        @foreach ($hasil->details as $detail)
+            <div class="flex flex-col gap-1.5 border-b border-dashed border-line py-2.75 last:border-b-0 sm:flex-row sm:gap-3 dark:border-night-line" wire:key="detail-{{ $detail->id }}">
+                <span class="shrink-0 sm:w-40 sm:pt-0.5"><span class="pill {{ $pillHasil[$detail->hasil->value] ?? 'pill-zinc' }}">{{ $detail->hasil->label() }}</span></span>
+                <span class="min-w-0 flex-1">
+                    <span class="block text-[13.5px] leading-snug font-semibold text-zinc-900 dark:text-white">{{ $detail->nama_pemeriksaan }}</span>
+                    @if ($detail->nilai_pengajuan !== null || $detail->nilai_dokumen !== null)
+                        <span class="mt-0.5 block text-[12.5px] text-mist dark:text-zinc-400">Nilai pengajuan: {{ $detail->nilai_pengajuan ?? '-' }} • Nilai dokumen: {{ $detail->nilai_dokumen ?? '-' }}</span>
+                    @endif
+                    @if ($detail->keterangan)
+                        <span class="mt-0.5 block text-[12.5px] leading-normal text-zinc-600 dark:text-zinc-300">{{ $detail->keterangan }}</span>
+                    @endif
+                </span>
+            </div>
+        @endforeach
+
+        @if ($this->riwayatPemeriksaan->count() > 1)
+            <p class="mt-4 text-[13px] font-medium text-zinc-700 dark:text-zinc-200">Riwayat pemeriksaan:</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($this->riwayatPemeriksaan as $riwayatHasil)
+                    <span class="pill {{ $pillHasil[$riwayatHasil->status->value] ?? 'pill-zinc' }}">{{ $riwayatHasil->created_at->format('d M H:i') }} — {{ $riwayatHasil->status->label() }}</span>
+                @endforeach
+            </div>
+        @endif
+    @else
+        <p class="text-[13.5px] text-zinc-500 dark:text-zinc-400">Belum ada pemeriksaan. Pemeriksaan berjalan otomatis setiap dokumen diunggah, diganti, atau dihapus.</p>
+    @endif
+</section>
