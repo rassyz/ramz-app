@@ -48,10 +48,23 @@ class RuleBasedEvidenceChecker
                 array_push($details, ...$this->periksaKelengkapan($pengajuan, $aturanKelengkapan));
             }
 
+            // Pencocokan hanya berjalan untuk jenis dokumen yang
+            // termasuk persyaratan pengajuan ini (snapshot) — aturan
+            // untuk jenis di luar snapshot tidak ditampilkan dan
+            // tidak dinilai, karena LC pengajuan ini tidak
+            // mensyaratkannya.
+            $jenisPadaSnapshot = collect($pengajuan->persyaratanBerlaku())
+                ->map(fn($syarat) => strtolower(trim($syarat['nama'] ?? '')))
+                ->all();
+
             foreach ($aturanAktif->where('kategori', KategoriAturan::Pencocokan) as $aturan) {
                 // Aturan pencocokan v1 (tanpa jenis dokumen) tidak lagi
                 // dievaluasi oleh checker v2.
                 if ($aturan->jenis_dokumen === null || $aturan->field === null) {
+                    continue;
+                }
+
+                if (! in_array(strtolower(trim($aturan->jenis_dokumen)), $jenisPadaSnapshot, true)) {
                     continue;
                 }
 
