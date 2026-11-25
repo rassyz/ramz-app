@@ -217,92 +217,135 @@ new #[Title('Master Layanan')] class extends Component
         Flux::toast(variant: 'success', text: 'Layanan berhasil dihapus.');
     }
 }; ?>
-
 <section class="w-full">
-    <flux:heading level="1" size="xl">Master Layanan</flux:heading>
-    <flux:subheading>Kelola jenis layanan perdagangan dan pembayaran internasional beserta persyaratan dokumennya.</flux:subheading>
-
-    <flux:separator class="mt-4 mb-6" />
-
-    <div class="space-y-10">
+    {{-- Baris judul + tombol ikon (selaras mockup) --}}
+    <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <flux:heading level="2">{{ $editingId ? 'Ubah Layanan' : 'Tambah Layanan' }}</flux:heading>
+            <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Master Layanan</h1>
+            <p class="mt-1 text-[13px] text-mist dark:text-zinc-400">Kelola jenis layanan perdagangan dan pembayaran internasional beserta persyaratan dokumennya.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('notifikasis.index') }}" wire:navigate class="relative hidden size-10 items-center justify-center rounded-xl border border-line bg-white text-zinc-500 hover:text-primary lg:flex dark:border-night-line dark:bg-night-tile dark:text-zinc-400" aria-label="Notifikasi" title="Notifikasi">
+                <flux:icon name="bell" class="size-5" />
+                @php
+                    $belumDibacaLayanan = auth()->user()->notifikasis()->whereNull('dibaca_at')->count();
+                @endphp
+                @if ($belumDibacaLayanan > 0)
+                    <span class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">{{ $belumDibacaLayanan }}</span>
+                @endif
+            </a>
+            <button type="button" x-data x-on:click="$flux.dark = !$flux.dark" class="hidden size-10 cursor-pointer items-center justify-center rounded-xl border border-line bg-white text-zinc-500 hover:text-primary lg:flex dark:border-night-line dark:bg-night-tile dark:text-zinc-400" aria-label="Ganti tema gelap atau terang" title="Mode gelap / terang">
+                <flux:icon.moon class="size-5 dark:hidden" />
+                <flux:icon.sun class="hidden size-5 dark:block" />
+            </button>
+        </div>
+    </div>
 
-            <form wire:submit="simpan" class="mt-4 space-y-4">
-                <div class="grid gap-4 sm:grid-cols-2">
+    <div class="bento mt-5">
+        <section class="tile md:col-span-2 xl:col-span-12">
+            <div class="mb-4 flex items-center justify-between gap-2.5">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">{{ $editingId ? 'Ubah Layanan' : 'Tambah Layanan' }}</h2>
+            </div>
+            <form wire:submit="simpan">
+                <div class="grid gap-4 lg:grid-cols-3">
                     <flux:input wire:model="kode" label="Kode" type="text" required placeholder="mis. LC-IMP" />
-                    <flux:input wire:model="nama" label="Nama Layanan" type="text" required />
-                    <flux:textarea wire:model="deskripsi" label="Deskripsi" rows="3" />
-
-                    <div class="self-start">
+                    <flux:input wire:model="nama" label="Nama Layanan" type="text" required class="lg:col-span-2" />
+                    <flux:textarea wire:model="deskripsi" label="Deskripsi" rows="3" class="lg:col-span-3" />
+                    <div class="lg:col-span-3">
                         <flux:checkbox wire:model="is_active" label="Aktif (dapat dipilih nasabah)" />
                     </div>
                 </div>
 
-                <div class="space-y-3">
-                    <flux:heading level="3">Persyaratan Dokumen</flux:heading>
-
+                <p class="mt-5 mb-2.5 text-[12.5px] font-semibold text-zinc-900 dark:text-white">Persyaratan Dokumen Templat</p>
+                <div class="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($persyaratan as $index => $syarat)
-                        <div class="flex items-end gap-2">
-                            <flux:input wire:model="persyaratan.{{ $index }}.nama" type="text" placeholder="Nama dokumen, mis. Invoice" class="flex-1" />
-                            <flux:checkbox wire:model="persyaratan.{{ $index }}.wajib" label="Wajib" />
-                            <flux:button size="sm" variant="danger" wire:click="hapusSyarat({{ $index }})">Hapus</flux:button>
+                        <div class="flex items-center gap-2.5 rounded-xl bg-soft px-3 py-2.25 dark:bg-night-soft" wire:key="syarat-{{ $index }}">
+                            <flux:checkbox wire:model.live="persyaratan.{{ $index }}.wajib" />
+                            <flux:input wire:model="persyaratan.{{ $index }}.nama" type="text" size="sm" placeholder="Nama dokumen, mis. Invoice" class="min-w-0 flex-1" />
+                            <span class="pill {{ $syarat['wajib'] ? 'pill-amber' : 'pill-zinc' }} shrink-0">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</span>
+                            <button type="button" class="btn btn-danger btn-small shrink-0" wire:click="hapusSyarat({{ $index }})">Hapus</button>
                         </div>
                     @endforeach
-
-                    <flux:button size="sm" wire:click="tambahSyarat">+ Tambah Dokumen</flux:button>
+                </div>
+                <div class="mt-3.5 flex flex-wrap items-center gap-3">
+                    <button type="button" class="btn" wire:click="tambahSyarat">+ Tambah Dokumen</button>
+                    <span class="text-[12.5px] text-mist dark:text-zinc-400">Baris baru muncul sebagai chip — isi nama dokumennya, lalu atur statusnya lewat kotak centang (pill mengikuti).</span>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="mt-5 flex gap-2">
                     <flux:button variant="primary" type="submit" class="flex-1">{{ $editingId ? 'Simpan Perubahan' : 'Tambah Layanan' }}</flux:button>
                     @if ($editingId)
                         <flux:button wire:click="batalUbah">Batal</flux:button>
                     @endif
                 </div>
             </form>
-        </div>
+        </section>
 
-        <div>
-            <div class="flex items-center justify-between gap-4">
-                <flux:heading level="2">Daftar Layanan</flux:heading>
-                <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau kode..." class="max-w-64" />
+        <section class="tile md:col-span-2 xl:col-span-12">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Daftar Layanan</h2>
+                <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau kode..." class="w-full sm:w-60" />
             </div>
-
-            <flux:table :paginate="$this->layanans" class="mt-4">
-                <flux:table.columns>
-                    <flux:table.column>Kode</flux:table.column>
-                    <flux:table.column>Nama</flux:table.column>
-                    <flux:table.column>Syarat Dokumen</flux:table.column>
-                    <flux:table.column>Status</flux:table.column>
-                    <flux:table.column></flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @foreach ($this->layanans as $layanan)
-                        <flux:table.row :key="$layanan->id">
-                            <flux:table.cell class="font-medium">{{ $layanan->kode }}</flux:table.cell>
-                            <flux:table.cell>{{ $layanan->nama }}</flux:table.cell>
-                            <flux:table.cell>
-                                @forelse ($layanan->persyaratan_dokumen ?? [] as $syarat)
-                                    <flux:badge size="sm" :color="$syarat['wajib'] ? 'blue' : 'zinc'">{{ $syarat['nama'] }}{{ $syarat['wajib'] ? '' : ' (opsional)' }}</flux:badge>
-                                @empty
-                                    <flux:text size="sm">Belum diatur</flux:text>
-                                @endforelse
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge :color="$layanan->is_active ? 'green' : 'zinc'">{{ $layanan->is_active ? 'Aktif' : 'Nonaktif' }}</flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-2">
-                                    <flux:button size="sm" wire:click="mulaiUbah({{ $layanan->id }})">Ubah</flux:button>
-                                    <flux:button size="sm" variant="danger" wire:click="mintaKonfirmasiHapus({{ $layanan->id }})">Hapus</flux:button>
-                                </div>
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </div>
+            <div class="-mx-4.25 overflow-x-auto px-4.25 sm:-mx-5.5 sm:px-5.5">
+                <table class="tabel-kartu w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-line text-left dark:border-night-line">
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Kode</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Nama</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Persyaratan Dokumen</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Pengajuan</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Status</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($this->layanans as $layanan)
+                            <tr class="border-b border-line last:border-b-0 dark:border-night-line" wire:key="layanan-{{ $layanan->id }}">
+                                <td class="py-3.25 pr-3 font-mono text-[13px] font-bold whitespace-nowrap text-zinc-900 dark:text-white" data-label="Kode">{{ $layanan->kode }}</td>
+                                <td class="py-3.25 pr-3 text-[13.5px] font-semibold text-zinc-900 dark:text-white" data-label="Nama">{{ $layanan->nama }}</td>
+                                <td class="py-3.25 pr-3" data-label="Persyaratan Dokumen">
+                                    <span class="flex flex-wrap gap-1.5">
+                                        @forelse ($layanan->persyaratan_dokumen ?? [] as $syarat)
+                                            <span class="pill {{ $syarat['wajib'] ? 'pill-indigo' : 'pill-zinc' }} px-2 py-0.5 text-[10.5px]">{{ $syarat['nama'] }}{{ $syarat['wajib'] ? '' : ' (opsional)' }}</span>
+                                        @empty
+                                            <span class="text-[13px] text-zinc-500 dark:text-zinc-400">Belum diatur</span>
+                                        @endforelse
+                                    </span>
+                                </td>
+                                <td class="py-3.25 pr-3 text-[13.5px] text-zinc-600 dark:text-zinc-300" data-label="Pengajuan">{{ $layanan->pengajuans_count }}</td>
+                                <td class="py-3.25 pr-3" data-label="Status"><span class="pill {{ $layanan->is_active ? 'pill-green' : 'pill-zinc' }}">{{ $layanan->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
+                                <td class="aksi py-3.25" data-label="Aksi">
+                                    <span class="flex gap-2">
+                                        <button type="button" class="btn btn-small" wire:click="mulaiUbah({{ $layanan->id }})">Ubah</button>
+                                        <button type="button" class="btn btn-danger btn-small" wire:click="mintaKonfirmasiHapus({{ $layanan->id }})">Hapus</button>
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($this->layanans->total() > 0)
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-mist dark:text-zinc-400">
+                    <span>Menampilkan {{ $this->layanans->firstItem() }}–{{ $this->layanans->lastItem() }} dari {{ $this->layanans->total() }} layanan</span>
+                    @if ($this->layanans->hasPages())
+                        @php
+                            $halamanIni = $this->layanans->currentPage();
+                            $halamanAkhir = $this->layanans->lastPage();
+                            $daftarHalaman = range(max(1, $halamanIni - 2), min($halamanAkhir, $halamanIni + 2));
+                        @endphp
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" wire:click="previousPage" class="chip {{ $this->layanans->onFirstPage() ? 'pointer-events-none opacity-40' : '' }}" aria-label="Halaman sebelumnya">‹</button>
+                            @foreach ($daftarHalaman as $halaman)
+                                <button type="button" wire:click="gotoPage({{ $halaman }})" class="chip {{ $halaman === $halamanIni ? 'chip-aktif' : '' }}">{{ $halaman }}</button>
+                            @endforeach
+                            <button type="button" wire:click="nextPage" class="chip {{ $halamanIni === $halamanAkhir ? 'pointer-events-none opacity-40' : '' }}" aria-label="Halaman berikutnya">›</button>
+                        </div>
+                    @endif
+                </div>
+            @endif
+            <p class="mt-3 text-[12.5px] leading-normal text-mist dark:text-zinc-400">Layanan yang sudah memiliki pengajuan tidak dapat dihapus — nonaktifkan saja lewat Ubah agar tidak dipilih untuk pengajuan baru.</p>
+        </section>
     </div>
 
     @if ($this->detailKonfirmasi)

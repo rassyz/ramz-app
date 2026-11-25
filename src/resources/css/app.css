@@ -10,9 +10,8 @@
 
 @theme {
     --font-sans:
-        "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
-        "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
-        "Noto Color Emoji";
+        "Inter", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+        "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -31,6 +30,20 @@
     --color-primary-strong: #3543d6;
     --color-primary-soft: #b9c2ff;
     --color-lavender: #f1f1f8;
+
+    /* Fase 13: token bento (dari mockup yang disetujui). */
+    --color-primary-tint: #eef0ff;
+    --color-canvas: #f4f4f7;
+    --color-paper: #ffffff;
+    --color-soft: #f4f4f8;
+    --color-night: #0b0b0f;
+    --color-night-tile: #15151c;
+    --color-night-soft: #1b1b24;
+    --color-ink: #18181b;
+    --color-mist: #71717a;
+    --color-line: #ececf1;
+    --color-night-line: #26262f;
+    --radius-tile: 1.5rem;
 
     --color-accent: var(--color-primary);
     --color-accent-content: var(--color-primary);
@@ -60,7 +73,7 @@
 }
 
 [data-flux-label] {
-    @apply !mb-0 !leading-tight;
+    @apply mb-0! leading-tight!;
 }
 
 input:focus[data-flux-control],
@@ -73,14 +86,179 @@ select:focus[data-flux-control] {
     @apply size-4;
 } */
 
-/* Fase 8: item sidebar aktif berbentuk pil biru (penanda bawaan Flux). */
+/* Fase 13: item sidebar aktif mengikuti mockup bento — pil biru muda di tema
+   terang, pil biru penuh di tema gelap. */
 [data-flux-sidebar-item][data-current="true"],
 [data-flux-navlist-item][data-current="true"] {
-    background-color: var(--color-primary) !important;
-    color: #fff !important;
+    background-color: var(--color-primary-tint) !important;
+    color: var(--color-primary-strong) !important;
+    font-weight: 600;
 }
 
 [data-flux-sidebar-item][data-current="true"] svg,
 [data-flux-navlist-item][data-current="true"] svg {
+    color: var(--color-primary) !important;
+}
+
+.dark [data-flux-sidebar-item][data-current="true"],
+.dark [data-flux-navlist-item][data-current="true"] {
+    background-color: var(--color-primary) !important;
     color: #fff !important;
+}
+
+.dark [data-flux-sidebar-item][data-current="true"] svg,
+.dark [data-flux-navlist-item][data-current="true"] svg {
+    color: #fff !important;
+}
+
+/* Fase 13: fondasi bento — komponen bersama untuk refactor UI. */
+[x-cloak] {
+    display: none !important;
+}
+
+@keyframes naik-lembar {
+    from {
+        transform: translateY(24px);
+        opacity: 0.5;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animasi-lembar {
+    animation: naik-lembar 0.22s ease-out;
+}
+
+/* Ruang aman di bawah konten agar tidak tertutup navigasi bawah mobile. */
+@media (max-width: 1023.5px) {
+    body {
+        padding-bottom: 5.25rem;
+    }
+}
+
+@layer components {
+    .tile {
+        @apply rounded-[20px] border border-line bg-white p-4.25 dark:border-night-line dark:bg-night-tile sm:rounded-3xl sm:p-5.5;
+    }
+
+    .bento {
+        @apply grid grid-cols-1 gap-4.5 md:grid-cols-2 xl:grid-cols-12;
+    }
+
+    .btn {
+        @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-sm transition hover:bg-soft dark:border-night-line dark:bg-night-soft dark:text-zinc-100 dark:hover:bg-night-tile;
+    }
+
+    .btn-primary {
+        @apply border-transparent bg-primary text-white hover:bg-primary-strong dark:hover:bg-primary-strong;
+    }
+
+    .btn-danger {
+        @apply border-transparent bg-red-600 text-white hover:bg-red-700 dark:hover:bg-red-500;
+    }
+
+    .btn-small {
+        @apply rounded-[10px] px-3 py-1.75 text-[13px];
+    }
+
+    .chip {
+        @apply inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line bg-white px-3.25 py-1.75 text-[12.5px] font-semibold whitespace-nowrap text-zinc-500 transition hover:text-zinc-900 dark:border-night-line dark:bg-night-tile dark:text-zinc-400 dark:hover:text-white;
+    }
+
+    .chip-aktif {
+        @apply border-primary bg-primary text-white hover:text-white dark:border-primary dark:bg-primary dark:text-white dark:hover:text-white;
+    }
+
+    .pill {
+        @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold before:h-1.5 before:w-1.5 before:shrink-0 before:rounded-full before:bg-current before:content-[''];
+    }
+
+    .pill-green {
+        @apply bg-emerald-50 text-emerald-600 dark:bg-[#0b2b21] dark:text-emerald-400;
+    }
+
+    .pill-red {
+        @apply bg-red-50 text-red-600 dark:bg-[#331314] dark:text-red-400;
+    }
+
+    .pill-amber {
+        @apply bg-amber-50 text-amber-600 dark:bg-[#2e2008] dark:text-amber-400;
+    }
+
+    .pill-blue {
+        @apply bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-400;
+    }
+
+    .pill-indigo {
+        @apply bg-primary-tint text-primary-strong dark:bg-primary/20 dark:text-indigo-200;
+    }
+
+    .pill-violet {
+        @apply bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-300;
+    }
+
+    .pill-zinc {
+        @apply bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400;
+    }
+}
+
+/* Fase 13: tabel menjadi kartu bertumpuk di layar kecil bila tabel diberi
+   kelas .tabel-kartu dan tiap sel memiliki atribut data-label. */
+@media (max-width: 640px) {
+    .tabel-kartu thead {
+        display: none;
+    }
+
+    .tabel-kartu,
+    .tabel-kartu tbody,
+    .tabel-kartu tr,
+    .tabel-kartu td {
+        display: block;
+        width: 100%;
+    }
+
+    .tabel-kartu tr {
+        margin-bottom: 10px;
+        border: 1px solid var(--color-line);
+        border-radius: 18px;
+        background: var(--color-paper);
+        padding: 10px 14px;
+    }
+
+    .dark .tabel-kartu tr {
+        border-color: var(--color-night-line);
+        background: var(--color-night-tile);
+    }
+
+    .tabel-kartu td {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border: 0;
+        padding: 6px 0;
+        text-align: right;
+        font-size: 13px;
+    }
+
+    .tabel-kartu td::before {
+        content: attr(data-label);
+        text-align: left;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-mist);
+    }
+
+    .tabel-kartu td.aksi {
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .tabel-kartu td.aksi::before {
+        margin-right: auto;
+    }
 }

@@ -3,18 +3,21 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
-        <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div class="flex w-full max-w-sm flex-col gap-2">
-                <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
+    <body class="min-h-screen bg-canvas antialiased dark:bg-night">
+        <div class="grid min-h-svh place-items-center px-5.5 py-5.5">
+            <div class="w-full max-w-102.5">
+                {{-- Baris brand di atas kartu (selaras mockup Login) --}}
+                <a href="{{ route('home') }}" class="mb-5.5 flex items-center justify-center gap-2.5" wire:navigate>
+                    <span class="flex size-9 shrink-0 items-center justify-center rounded-[11px] bg-primary text-[17px] font-extrabold text-white">{{ strtoupper(substr(config('app.name', 'R'), 0, 1)) }}</span>
+                    <span class="text-left">
+                        <span class="block text-base leading-tight font-extrabold tracking-tight text-zinc-900 dark:text-white">{{ config('app.name', 'Laravel') }}</span>
+                        <span class="block text-[11px] leading-tight text-mist dark:text-zinc-400">Monitoring Layanan Perdagangan</span>
                     </span>
-                    <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
                 </a>
-                <div class="flex flex-col gap-6">
+
+                <section class="tile p-7">
                     {{ $slot }}
-                </div>
+                </section>
             </div>
         </div>
 

@@ -85,8 +85,8 @@ new #[Title('Profile settings')] class extends Component {
 
     <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
-        <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
+    <x-pages::settings.layout :heading="__('Profil')" :subheading="__('Perbarui nama dan alamat email Anda')">
+        <form wire:submit="updateProfileInformation" class="w-full space-y-6">
             <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
 
             <div>
@@ -104,7 +104,7 @@ new #[Title('Profile settings')] class extends Component {
                         </flux:text>
 
                         @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
+                            <flux:text class="mt-2 font-medium !dark:text-green-400 text-green-600!">
                                 {{ __('A new verification link has been sent to your email address.') }}
                             </flux:text>
                         @endif

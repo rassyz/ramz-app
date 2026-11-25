@@ -257,155 +257,155 @@ new #[Title('Detail Pengajuan')] class extends Component
 }; ?>
 
 <section class="w-full">
-    <div class="flex flex-wrap items-center justify-between gap-4">
+    @php
+        $petaPillStatus = [
+            'menunggu_verifikasi' => 'pill-amber',
+            'perlu_perbaikan' => 'pill-red',
+            'terverifikasi' => 'pill-indigo',
+            'diproses' => 'pill-blue',
+            'selesai' => 'pill-green',
+            'dibatalkan' => 'pill-zinc',
+        ];
+        $pillStatusDetail = $petaPillStatus[$pengajuan->status->value] ?? 'pill-zinc';
+    @endphp
+
+    {{-- Kepala halaman: breadcrumb + nomor + meta + aksi (selaras mockup) --}}
+    <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <flux:heading level="1" size="xl">{{ $pengajuan->nomor_pengajuan }}</flux:heading>
-            <flux:subheading>
-                Diajukan {{ $pengajuan->created_at->format('d M Y H:i') }} oleh {{ $pengajuan->user->name }}
-            </flux:subheading>
+            <div class="mb-1 text-[12.5px] text-mist dark:text-zinc-400">
+                @if (auth()->user()->isNasabah())
+                    <a href="{{ route('nasabah.pengajuan') }}" wire:navigate class="font-semibold text-primary hover:underline">Pengajuan Saya</a>
+                @else
+                    <a href="{{ route('pengajuans.index') }}" wire:navigate class="font-semibold text-primary hover:underline">Pantau Pengajuan</a>
+                @endif
+                / Detail
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">{{ $pengajuan->nomor_pengajuan }}</h1>
+            <p class="mt-1 text-[13px] text-mist dark:text-zinc-400">{{ $pengajuan->user->name }} — {{ $pengajuan->layanan->nama }} — dibuat {{ $pengajuan->created_at->format('d M Y, H.i') }}</p>
         </div>
-        <div class="flex items-center gap-2">
-            <flux:badge size="lg" :color="$pengajuan->status->color()">{{ $pengajuan->status->label() }}</flux:badge>
+        <div class="flex flex-wrap items-center gap-2">
+            <span class="pill {{ $pillStatusDetail }} px-3.5 py-1.75 text-[13px]">{{ $pengajuan->status->label() }}</span>
             @can('cancel', $pengajuan)
-                <flux:button variant="danger" wire:click="mintaKonfirmasi('batalkan')">Batalkan Pengajuan</flux:button>
+                <button type="button" class="btn" wire:click="mintaKonfirmasi('batalkan')">Batalkan Pengajuan</button>
             @endcan
             @can('delete', $pengajuan)
-                <flux:button variant="danger" wire:click="mintaKonfirmasi('hapusPengajuan')">Hapus Pengajuan</flux:button>
+                <button type="button" class="btn btn-danger" wire:click="mintaKonfirmasi('hapusPengajuan')">Hapus Pengajuan</button>
             @endcan
         </div>
     </div>
 
-    <flux:button size="sm" class="mt-4" :href="auth()->user()->isNasabah() ? route('nasabah.pengajuan') : route('pengajuans.index')">&larr; Kembali</flux:button>
+    <div class="bento mt-5">
+        @if (auth()->user()->isNasabah() && $pengajuan->status === \App\Enums\StatusPengajuan::PerluPerbaikan)
+            <section class="tile border-transparent bg-red-50 md:col-span-2 xl:col-span-12 dark:bg-[#331314]">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-red-700 dark:text-red-300">Pengajuan Dikembalikan untuk Perbaikan</h2>
+                @if ($pengajuan->catatan)
+                    <p class="mt-2 text-[13.5px] leading-normal text-zinc-700 dark:text-zinc-200">Catatan operator: {{ $pengajuan->catatan }}</p>
+                @endif
+                <p class="mt-2 text-[13.5px] leading-normal text-zinc-700 dark:text-zinc-200">Perbaiki dokumen pada bagian Dokumen Pendukung di bawah, lalu ajukan kembali pengajuan ini.</p>
+                @can('resubmit', $pengajuan)
+                    <button type="button" class="btn btn-primary mt-3.5" wire:click="mintaKonfirmasi('ajukanKembali')">Ajukan Kembali</button>
+                @endcan
+            </section>
+        @endif
 
-    <flux:separator class="mt-4 mb-6" />
+        <livewire:pages::pengajuans.show-dokumen :pengajuan="$pengajuan" />
 
-    @if (auth()->user()->isNasabah() && $pengajuan->status === \App\Enums\StatusPengajuan::PerluPerbaikan)
-        <div class="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
-            <flux:heading level="2">Pengajuan Dikembalikan untuk Perbaikan</flux:heading>
-            @if ($pengajuan->catatan)
-                <flux:text class="mt-2 block">Catatan operator: {{ $pengajuan->catatan }}</flux:text>
-            @endif
-            <flux:text class="mt-2 block">Perbaiki dokumen pada bagian Dokumen Pendukung di bawah, lalu ajukan kembali pengajuan ini.</flux:text>
-            @can('resubmit', $pengajuan)
-                <flux:button variant="primary" class="mt-3 w-full sm:w-auto" wire:click="mintaKonfirmasi('ajukanKembali')">Ajukan Kembali</flux:button>
-            @endcan
-        </div>
-    @endif
+        <livewire:pages::pengajuans.show-data-lc :pengajuan="$pengajuan" />
 
-    <div class="mb-6 rounded-3xl bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:bg-zinc-900">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <flux:heading level="2">Dokumen Fisik</flux:heading>
+        <livewire:pages::pengajuans.show-pemeriksaan :pengajuan="$pengajuan" />
+
+        @if (auth()->user()->isOperator())
+            <livewire:pages::pengajuans.show-verifikasi :pengajuan="$pengajuan" />
+        @endif
+
+        {{-- Riwayat status & verifikasi sebagai linimasa (selaras mockup) --}}
+        <section class="tile md:col-span-1 xl:col-span-4">
+            <div class="mb-4 flex items-center justify-between gap-2.5">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Riwayat</h2>
+            </div>
+            <p class="mb-2 text-[11px] font-bold tracking-[0.07em] text-mist uppercase dark:text-zinc-400">Status</p>
+            <div class="relative pl-6.5">
+                <span class="absolute top-1.5 bottom-1.5 left-2 w-0.5 bg-line dark:bg-night-line"></span>
+                @forelse ($this->riwayat as $riwayat)
+                    <div class="relative pb-4.5 last:pb-0.5">
+                        <span class="absolute top-0.75 left-[-24.5px] size-3.25 rounded-full border-[3px] border-primary bg-white dark:bg-night-tile"></span>
+                        <p class="text-[13.5px] font-semibold text-zinc-900 dark:text-white">
+                            @if ($riwayat->status_dari)
+                                {{ $riwayat->status_dari->label() }} → {{ $riwayat->status_ke->label() }}
+                            @else
+                                Pengajuan dibuat
+                            @endif
+                        </p>
+                        <p class="mt-0.5 text-xs leading-normal text-mist dark:text-zinc-400">{{ $riwayat->created_at->format('d M Y H:i') }} — oleh {{ $riwayat->diubahOleh?->name ?? 'Sistem' }}</p>
+                        @if ($riwayat->catatan)
+                            <p class="mt-0.5 text-[12.5px] leading-normal text-zinc-600 dark:text-zinc-300">{{ $riwayat->catatan }}</p>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-[13px] text-zinc-500 dark:text-zinc-400">Belum ada riwayat status.</p>
+                @endforelse
+            </div>
+            <p class="mt-5 mb-2 text-[11px] font-bold tracking-[0.07em] text-mist uppercase dark:text-zinc-400">Verifikasi</p>
+            <div class="relative pl-6.5">
+                <span class="absolute top-1.5 bottom-1.5 left-2 w-0.5 bg-line dark:bg-night-line"></span>
+                @forelse ($this->verifikasiRiwayat as $verifikasi)
+                    <div class="relative pb-4.5 last:pb-0.5">
+                        <span class="absolute top-0.75 left-[-24.5px] size-3.25 rounded-full border-[3px] border-primary bg-white dark:bg-night-tile"></span>
+                        <p class="text-[13.5px] font-semibold text-zinc-900 dark:text-white">{{ $verifikasi->keputusan->label() }}</p>
+                        <p class="mt-0.5 text-xs leading-normal text-mist dark:text-zinc-400">{{ $verifikasi->created_at->format('d M Y H:i') }} — oleh {{ $verifikasi->operator->name }}@if ($verifikasi->hasilPemeriksaan) — acuan pemeriksaan: {{ $verifikasi->hasilPemeriksaan->status->label() }}@endif</p>
+                        @if ($verifikasi->catatan)
+                            <p class="mt-0.5 text-[12.5px] leading-normal text-zinc-600 dark:text-zinc-300">{{ $verifikasi->catatan }}</p>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-[13px] text-zinc-500 dark:text-zinc-400">Belum ada keputusan verifikasi.</p>
+                @endforelse
+            </div>
+        </section>
+
+        {{-- Data Pengajuan ringkas --}}
+        <section class="tile md:col-span-1 xl:col-span-4">
+            <div class="mb-4 flex items-center justify-between gap-2.5">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Data Pengajuan</h2>
+            </div>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4.5 gap-y-2.25 text-[13.5px]">
+                <dt class="text-mist dark:text-zinc-400">Nasabah</dt>
+                <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->user->name }}<span class="block text-[12px] font-medium break-all text-mist dark:text-zinc-400">{{ $pengajuan->user->email }}</span></dd>
+                <dt class="text-mist dark:text-zinc-400">Jenis Layanan</dt>
+                <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->layanan->nama }}</dd>
+                <dt class="text-mist dark:text-zinc-400">Nomor Invoice</dt>
+                <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nomor_invoice ?? '-' }}</dd>
+                <dt class="text-mist dark:text-zinc-400">Status</dt>
+                <dd class="text-right"><span class="pill {{ $pillStatusDetail }}">{{ $pengajuan->status->label() }}</span></dd>
+                @if ($pengajuan->catatan)
+                    <dt class="text-mist dark:text-zinc-400">Catatan</dt>
+                    <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->catatan }}</dd>
+                @endif
+            </dl>
+        </section>
+
+        {{-- Dokumen Fisik --}}
+        <section class="tile md:col-span-2 xl:col-span-4">
+            <div class="mb-4 flex items-center justify-between gap-2.5">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Dokumen Fisik</h2>
                 @if ($pengajuan->dokumen_fisik_diterima_at)
-                    <flux:text class="mt-1 block">
-                        Diterima &amp; disetarakan oleh {{ $pengajuan->disetarakanOleh?->name ?? '-' }}
-                        pada {{ $pengajuan->dokumen_fisik_diterima_at->format('d M Y H:i') }}.
-                    </flux:text>
+                    <span class="pill pill-green">Fisik Disetarakan</span>
                 @else
-                    <flux:text class="mt-1 block">Dokumen fisik belum diterima / belum disetarakan dengan data masukan nasabah.</flux:text>
+                    <span class="pill pill-amber">Fisik Belum Diterima</span>
                 @endif
             </div>
             @if ($pengajuan->dokumen_fisik_diterima_at)
-                <flux:badge color="green" size="lg">Fisik Disetarakan</flux:badge>
+                <p class="text-[13.5px] leading-normal text-zinc-600 dark:text-zinc-300">Diterima &amp; disetarakan oleh {{ $pengajuan->disetarakanOleh?->name ?? '-' }} pada {{ $pengajuan->dokumen_fisik_diterima_at->format('d M Y H:i') }}.</p>
             @else
-                <flux:badge color="amber" size="lg">Fisik Belum Diterima</flux:badge>
+                <p class="text-[13.5px] leading-normal text-zinc-600 dark:text-zinc-300">Dokumen fisik belum diterima / belum disetarakan dengan data masukan nasabah.</p>
                 @can('verify', $pengajuan)
                     @unless ($pengajuan->status === \App\Enums\StatusPengajuan::Selesai || $pengajuan->status === \App\Enums\StatusPengajuan::Dibatalkan)
-                        <flux:button variant="primary" class="w-full sm:w-auto" wire:click="mintaKonfirmasi('tandaiFisik')">Tandai Fisik Diterima &amp; Disetarakan</flux:button>
+                        <button type="button" class="btn btn-primary btn-small mt-3.5" wire:click="mintaKonfirmasi('tandaiFisik')">Tandai Fisik Diterima &amp; Disetarakan</button>
                     @endunless
                 @endcan
             @endif
-        </div>
+        </section>
     </div>
-
-    <div class="grid gap-6 lg:grid-cols-2">
-        <div class="space-y-6">
-            <div>
-                <flux:heading level="2">Data Pengajuan</flux:heading>
-                <flux:table class="mt-3">
-                    <flux:table.rows>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Nasabah</flux:table.cell>
-                            <flux:table.cell class="break-all">{{ $pengajuan->user->name }} ({{ $pengajuan->user->email }})</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Jenis Layanan</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->layanan->nama }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Nomor Invoice</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->nomor_invoice ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Status</flux:table.cell>
-                            <flux:table.cell><flux:badge :color="$pengajuan->status->color()">{{ $pengajuan->status->label() }}</flux:badge></flux:table.cell>
-                        </flux:table.row>
-                        @if ($pengajuan->catatan)
-                            <flux:table.row>
-                                <flux:table.cell class="font-medium">Catatan</flux:table.cell>
-                                <flux:table.cell>{{ $pengajuan->catatan }}</flux:table.cell>
-                            </flux:table.row>
-                        @endif
-                    </flux:table.rows>
-                </flux:table>
-            </div>
-
-<livewire:pages::pengajuans.show-data-lc :pengajuan="$pengajuan" />        </div>
-
-
-        <div>
-            <flux:heading level="2">Riwayat Status</flux:heading>
-            <div class="mt-4 space-y-4">
-                @forelse ($this->riwayat as $riwayat)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <div class="flex flex-wrap items-center gap-2">
-                            @if ($riwayat->status_dari)
-                                <flux:badge :color="$riwayat->status_dari->color()">{{ $riwayat->status_dari->label() }}</flux:badge>
-                                <span>&rarr;</span>
-                            @endif
-                            <flux:badge :color="$riwayat->status_ke->color()">{{ $riwayat->status_ke->label() }}</flux:badge>
-                        </div>
-                        <flux:text size="sm" class="mt-2 block">
-                            {{ $riwayat->created_at->format('d M Y H:i') }} — oleh {{ $riwayat->diubahOleh?->name ?? 'Sistem' }}
-                        </flux:text>
-                        @if ($riwayat->catatan)
-                            <flux:text size="sm" class="mt-1 block">{{ $riwayat->catatan }}</flux:text>
-                        @endif
-                    </div>
-                @empty
-                    <flux:text>Belum ada riwayat status.</flux:text>
-                @endforelse
-            </div>
-
-            <flux:heading level="2" class="mt-8">Riwayat Verifikasi</flux:heading>
-            <div class="mt-4 space-y-4">
-                @forelse ($this->verifikasiRiwayat as $verifikasi)
-                    <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <flux:badge :color="$verifikasi->keputusan->color()">{{ $verifikasi->keputusan->label() }}</flux:badge>
-                        </div>
-                        <flux:text size="sm" class="mt-2 block">
-                            {{ $verifikasi->created_at->format('d M Y H:i') }} — oleh {{ $verifikasi->operator->name }}
-                            @if ($verifikasi->hasilPemeriksaan)
-                                — acuan pemeriksaan: {{ $verifikasi->hasilPemeriksaan->status->label() }}
-                            @endif
-                        </flux:text>
-                        @if ($verifikasi->catatan)
-                            <flux:text size="sm" class="mt-1 block">{{ $verifikasi->catatan }}</flux:text>
-                        @endif
-                    </div>
-                @empty
-                    <flux:text>Belum ada keputusan verifikasi.</flux:text>
-                @endforelse
-            </div>
-        </div>
-    </div>
-
-<livewire:pages::pengajuans.show-verifikasi :pengajuan="$pengajuan" />
-
-<livewire:pages::pengajuans.show-dokumen :pengajuan="$pengajuan" />
-
-    <livewire:pages::pengajuans.show-pemeriksaan :pengajuan="$pengajuan" />
 
     @if ($this->detailKonfirmasi)
         <flux:modal wire:model="modalKonfirmasi" class="md:w-md">

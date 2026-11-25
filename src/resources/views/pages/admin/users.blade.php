@@ -230,18 +230,44 @@ new #[Title('Kelola Pengguna')] class extends Component
             ->paginate(10);
     }
 }; ?>
-
 <section class="w-full">
-    <flux:heading level="1" size="xl">Kelola Pengguna</flux:heading>
-    <flux:subheading>Kelola akun pengguna dan tetapkan hak akses berdasarkan peran: Admin, Operator, atau Nasabah.</flux:subheading>
+    @php
+        $pillPeran = [
+            'admin' => 'pill-violet',
+            'operator' => 'pill-blue',
+            'nasabah' => 'pill-indigo',
+        ];
+    @endphp
 
-    <flux:separator class="mt-4 mb-6" />
-
-    <div class="space-y-10">
+    {{-- Baris judul + tombol ikon (selaras mockup) --}}
+    <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-            <flux:heading level="2">Tambah Pengguna</flux:heading>
+            <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Kelola Pengguna</h1>
+            <p class="mt-1 text-[13px] text-mist dark:text-zinc-400">Kelola akun pengguna dan tetapkan hak akses berdasarkan peran: Admin, Operator, atau Nasabah.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('notifikasis.index') }}" wire:navigate class="relative hidden size-10 items-center justify-center rounded-xl border border-line bg-white text-zinc-500 hover:text-primary lg:flex dark:border-night-line dark:bg-night-tile dark:text-zinc-400" aria-label="Notifikasi" title="Notifikasi">
+                <flux:icon name="bell" class="size-5" />
+                @php
+                    $belumDibacaPengguna = auth()->user()->notifikasis()->whereNull('dibaca_at')->count();
+                @endphp
+                @if ($belumDibacaPengguna > 0)
+                    <span class="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">{{ $belumDibacaPengguna }}</span>
+                @endif
+            </a>
+            <button type="button" x-data x-on:click="$flux.dark = !$flux.dark" class="hidden size-10 cursor-pointer items-center justify-center rounded-xl border border-line bg-white text-zinc-500 hover:text-primary lg:flex dark:border-night-line dark:bg-night-tile dark:text-zinc-400" aria-label="Ganti tema gelap atau terang" title="Mode gelap / terang">
+                <flux:icon.moon class="size-5 dark:hidden" />
+                <flux:icon.sun class="hidden size-5 dark:block" />
+            </button>
+        </div>
+    </div>
 
-            <form wire:submit="createUser" class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="bento mt-5">
+        <section class="tile md:col-span-2 xl:col-span-12">
+            <div class="mb-4 flex items-center justify-between gap-2.5">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Tambah Pengguna</h2>
+            </div>
+            <form wire:submit="createUser" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <flux:input wire:model="name" label="Nama" type="text" required autocomplete="name" />
                 <flux:input wire:model="email" label="Email" type="email" required autocomplete="email" />
                 <flux:input wire:model="nomorHp" label="Nomor HP (WhatsApp)" type="text" placeholder="08xxxxxxxxxx" />
@@ -251,55 +277,78 @@ new #[Title('Kelola Pengguna')] class extends Component
                         <option value="{{ $roleOption->value }}">{{ $roleOption->label() }}</option>
                     @endforeach
                 </flux:select>
-
-                <div class="sm:col-span-2 lg:col-span-3">
-                <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Tambah Pengguna</flux:button>
+                <div class="flex items-end">
+                    <flux:button variant="primary" type="submit" class="w-full">Tambah Pengguna</flux:button>
                 </div>
             </form>
-        </div>
+            <p class="mt-3 text-[12.5px] leading-normal text-mist dark:text-zinc-400">Nomor HP dipakai untuk notifikasi WhatsApp. Email dan kata sandi awal disampaikan Admin kepada pengguna — akun dibuatkan oleh Admin, bukan mendaftar sendiri.</p>
+        </section>
 
-        <div>
-            <div class="flex items-center justify-between gap-4">
-                <flux:heading level="2">Daftar Pengguna</flux:heading>
-                <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau email..." class="max-w-64" />
+        <section class="tile md:col-span-2 xl:col-span-12">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Daftar Pengguna</h2>
+                <div class="flex items-center gap-3">
+                    <span class="text-[12.5px] text-mist dark:text-zinc-400">{{ $this->users->total() }} akun</span>
+                    <flux:input wire:model.live="search" type="search" placeholder="Cari nama atau email..." class="w-full sm:w-60" />
+                </div>
             </div>
-
-            <flux:table :paginate="$this->users" class="mt-4">
-                <flux:table.columns>
-                    <flux:table.column>Nama</flux:table.column>
-                    <flux:table.column>Email</flux:table.column>
-                    <flux:table.column>Nomor HP</flux:table.column>
-                    <flux:table.column>Peran</flux:table.column>
-                    <flux:table.column></flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @foreach ($this->users as $user)
-                        <flux:table.row :key="$user->id">
-                            <flux:table.cell>{{ $user->name }}</flux:table.cell>
-                            <flux:table.cell>{{ $user->email }}</flux:table.cell>
-                    <flux:table.cell>{{ $user->nomor_hp ?? '-' }}</flux:table.cell>
-                            <flux:table.cell>
-                                <flux:badge>{{ $user->role->label() }}</flux:badge>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="flex justify-end gap-2">
-                                    <flux:button size="sm" wire:click="startEdit({{ $user->id }})">Ubah</flux:button>
-                                    @if (auth()->user()->can('delete', $user))
-                                        <flux:button size="sm" variant="danger" wire:click="mintaKonfirmasiHapus({{ $user->id }})">Hapus</flux:button>
-                                    @endif
-                                </div>
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
+            <div class="-mx-4.25 overflow-x-auto px-4.25 sm:-mx-5.5 sm:px-5.5">
+                <table class="tabel-kartu w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-line text-left dark:border-night-line">
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Nama</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Email</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Nomor HP</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Peran</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Terdaftar</th>
+                            <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($this->users as $user)
+                            <tr class="border-b border-line last:border-b-0 dark:border-night-line" wire:key="pengguna-{{ $user->id }}">
+                                <td class="py-3.25 pr-3 text-[13.5px] font-semibold text-zinc-900 dark:text-white" data-label="Nama">{{ $user->name }}</td>
+                                <td class="py-3.25 pr-3 text-[13.5px] break-all text-zinc-600 dark:text-zinc-300" data-label="Email">{{ $user->email }}</td>
+                                <td class="py-3.25 pr-3 text-[13.5px] whitespace-nowrap text-zinc-600 dark:text-zinc-300" data-label="Nomor HP">{{ $user->nomor_hp ?? '-' }}</td>
+                                <td class="py-3.25 pr-3" data-label="Peran"><span class="pill {{ $pillPeran[$user->role->value] ?? 'pill-zinc' }}">{{ $user->role->label() }}</span></td>
+                                <td class="py-3.25 pr-3 text-[13.5px] whitespace-nowrap text-zinc-500 dark:text-zinc-400" data-label="Terdaftar">{{ $user->created_at->format('d M Y') }}</td>
+                                <td class="aksi py-3.25" data-label="Aksi">
+                                    <span class="flex gap-2">
+                                        <button type="button" class="btn btn-small" wire:click="startEdit({{ $user->id }})">Ubah</button>
+                                        @if (auth()->user()->can('delete', $user))
+                                            <button type="button" class="btn btn-danger btn-small" wire:click="mintaKonfirmasiHapus({{ $user->id }})">Hapus</button>
+                                        @endif
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if ($this->users->total() > 0)
+                <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-mist dark:text-zinc-400">
+                    <span>Menampilkan {{ $this->users->firstItem() }}–{{ $this->users->lastItem() }} dari {{ $this->users->total() }} pengguna</span>
+                    @if ($this->users->hasPages())
+                        @php
+                            $halamanIni = $this->users->currentPage();
+                            $halamanAkhir = $this->users->lastPage();
+                            $daftarHalaman = range(max(1, $halamanIni - 2), min($halamanAkhir, $halamanIni + 2));
+                        @endphp
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" wire:click="previousPage" class="chip {{ $this->users->onFirstPage() ? 'pointer-events-none opacity-40' : '' }}" aria-label="Halaman sebelumnya">‹</button>
+                            @foreach ($daftarHalaman as $halaman)
+                                <button type="button" wire:click="gotoPage({{ $halaman }})" class="chip {{ $halaman === $halamanIni ? 'chip-aktif' : '' }}">{{ $halaman }}</button>
+                            @endforeach
+                            <button type="button" wire:click="nextPage" class="chip {{ $halamanIni === $halamanAkhir ? 'pointer-events-none opacity-40' : '' }}" aria-label="Halaman berikutnya">›</button>
+                        </div>
+                    @endif
+                </div>
+            @endif
 
             @if ($editingId)
-                <div class="mt-8 rounded-xl border border-zinc-200 p-4 dark:border-zinc-700">
-                    <flux:heading level="3">Ubah Pengguna</flux:heading>
-
-                    <form wire:submit="updateUser" class="mt-4 grid gap-4 sm:grid-cols-3">
+                <div class="mt-4.5 rounded-[18px] border-[1.5px] border-dashed border-line p-4.5 dark:border-night-line">
+                    <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Ubah Pengguna</h3>
+                    <form wire:submit="updateUser" class="mt-3.5 grid gap-4 sm:grid-cols-3">
                         <flux:input wire:model="editName" label="Nama" type="text" required />
                         <flux:input wire:model="editEmail" label="Email" type="email" required />
                         <flux:input wire:model="editNomorHp" label="Nomor HP (WhatsApp)" type="text" placeholder="08xxxxxxxxxx" />
@@ -308,7 +357,6 @@ new #[Title('Kelola Pengguna')] class extends Component
                                 <option value="{{ $roleOption->value }}">{{ $roleOption->label() }}</option>
                             @endforeach
                         </flux:select>
-
                         <div class="flex gap-2 sm:col-span-3">
                             <flux:button variant="primary" type="submit">Simpan Perubahan</flux:button>
                             <flux:button wire:click="cancelEdit">Batal</flux:button>
@@ -316,7 +364,7 @@ new #[Title('Kelola Pengguna')] class extends Component
                     </form>
                 </div>
             @endif
-        </div>
+        </section>
     </div>
 
     @if ($this->detailKonfirmasi)

@@ -235,101 +235,86 @@ new class extends Component
         ];
     }
 }; ?>
+<section class="tile md:col-span-2 xl:col-span-4">
+    <div class="mb-4 flex items-center justify-between gap-2.5">
+        <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Data LC</h2>
+    </div>
+    <dl class="grid grid-cols-[auto_1fr] gap-x-4.5 gap-y-2.25 text-[13.5px]">
+        <dt class="text-mist dark:text-zinc-400">Nomor LC</dt>
+        <dd class="text-right font-semibold break-all text-zinc-900 dark:text-white">{{ $pengajuan->nomor_lc ?? '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Applicant</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nama_applicant ?? '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Nomor PO</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nomor_po ?? '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Nominal Acuan</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Toleransi</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->toleransi_persen !== null ? '±'.$pengajuan->toleransi_persen.'%' : '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Kuantitas Acuan</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->kuantitas_acuan !== null ? number_format((float) $pengajuan->kuantitas_acuan, 3, ',', '.').' '.($pengajuan->satuan_acuan ?? '') : '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Tanggal Terbit LC</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->tanggal_terbit_lc?->format('d M Y') ?? '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Tanggal Kedaluwarsa LC</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->tanggal_kedaluwarsa_lc?->format('d M Y') ?? '-' }}</dd>
+        <dt class="text-mist dark:text-zinc-400">Nomor Invoice</dt>
+        <dd class="text-right font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nomor_invoice ?? '-' }}</dd>
+    </dl>
 
-            <div>
-                <flux:heading level="2">Data LC</flux:heading>
-                <flux:table class="mt-3">
-                    <flux:table.rows>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Nomor LC</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->nomor_lc ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Applicant</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->nama_applicant ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Nomor PO</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->nomor_po ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Nominal Acuan</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Toleransi</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->toleransi_persen !== null ? $pengajuan->toleransi_persen.'%' : '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Kuantitas Acuan</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->kuantitas_acuan !== null ? number_format((float) $pengajuan->kuantitas_acuan, 3, ',', '.').' '.($pengajuan->satuan_acuan ?? '') : '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Tanggal Terbit LC</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->tanggal_terbit_lc?->format('d M Y') ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Tanggal Kedaluwarsa LC</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->tanggal_kedaluwarsa_lc?->format('d M Y') ?? '-' }}</flux:table.cell>
-                        </flux:table.row>
-                        <flux:table.row>
-                            <flux:table.cell class="font-medium">Dokumen LC</flux:table.cell>
-                            <flux:table.cell>
-                                @if ($pengajuan->path_file_lc)
-                                    <span>{{ $pengajuan->nama_file_lc }}</span>
-                                    <flux:button size="sm" class="ml-2" wire:click="unduhLc">Unduh</flux:button>
-                                @else
-                                    <span>Belum dilampirkan</span>
-                                @endif
-                            </flux:table.cell>
-                        </flux:table.row>
-                    </flux:table.rows>
-                </flux:table>
-
-                @can('updateAcuan', $pengajuan)
-                    <form wire:submit="simpanAcuan" class="mt-4 space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <flux:heading level="3">Isi / Ubah Data LC</flux:heading>
-                        <flux:text size="sm">Diisi dari dokumen LC yang terbit — data ini menjadi patokan pemeriksaan otomatis.</flux:text>
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <flux:input wire:model="acuanNomorInvoice" label="Nomor Invoice" type="text" />
-                            <flux:input wire:model="acuanNomorLc" label="Nomor LC" type="text" />
-                            <flux:input wire:model="acuanNamaApplicant" label="Nama Applicant" type="text" />
-                            <flux:input wire:model="acuanNomorPo" label="Nomor PO" type="text" />
-                            <flux:select wire:model="acuanMataUang" label="Mata Uang Acuan">
-                                <option value="">— Pilih —</option>
-                                @foreach (\App\Enums\MataUang::cases() as $mataUang)
-                                    <option value="{{ $mataUang->value }}">{{ $mataUang->label() }}</option>
-                                @endforeach
-                            </flux:select>
-                            <flux:input wire:model="acuanNominal" label="Nominal Acuan" type="number" step="0.01" min="0" />
-                            <flux:input wire:model="acuanToleransi" label="Toleransi (%)" type="number" step="0.01" min="0" max="100" />
-                            <flux:input wire:model="acuanKuantitas" label="Kuantitas Acuan" type="number" step="0.001" min="0" />
-                            <flux:input wire:model="acuanSatuan" label="Satuan Kuantitas" type="text" />
-                            <flux:input wire:model="acuanTanggalTerbit" label="Tanggal Terbit LC" type="date" />
-                            <flux:input wire:model="acuanTanggalKedaluwarsa" label="Tanggal Kedaluwarsa LC" type="date" />
-                        </div>
-                        <flux:button variant="primary" type="submit">Simpan Data LC</flux:button>
-                    </form>
-
-<livewire:pages::pengajuans.show-persyaratan :pengajuan="$pengajuan" />
-                @endcan
-
+    {{-- Berkas LC: kotak lunak seperti mockup; Unduh untuk semua peran, Hapus khusus staf --}}
+    <div class="mt-4 flex items-center gap-2.5 rounded-[14px] bg-soft px-3.25 py-2.75 text-[13px] dark:bg-night-soft">
+        @if ($pengajuan->path_file_lc)
+            <span class="min-w-0 flex-1 truncate font-semibold text-zinc-900 dark:text-white">{{ $pengajuan->nama_file_lc }}</span>
+            <span class="hidden text-mist min-[641px]:inline dark:text-zinc-400">— berkas LC</span>
+            <span class="ml-auto flex shrink-0 gap-2">
+                <button type="button" class="btn btn-small" wire:click="unduhLc">Unduh</button>
                 @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
-                    <form wire:submit="unggahLc" class="mt-4 space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
-                        <flux:heading level="3">Lampiran Dokumen LC</flux:heading>
-                        <flux:text size="sm">Berkas LC asli sebagai acuan — dapat diunduh nasabah. Berkas ini tidak diperiksa oleh checker. Format PDF, JPG, atau PNG, maksimal 5 MB.</flux:text>
-                        <flux:input wire:model="uploadLc" type="file" />
-                        @error('uploadLc') <flux:text size="sm" class="text-red-600 dark:text-red-400">{{ $message }}</flux:text> @enderror
-                        <div class="flex flex-wrap gap-3">
-                            <flux:button variant="primary" type="submit">{{ $pengajuan->path_file_lc ? 'Ganti Dokumen LC' : 'Lampirkan Dokumen LC' }}</flux:button>
-                            @if ($pengajuan->path_file_lc)
-                                <flux:button type="button" variant="danger" wire:click="mintaKonfirmasiHapusLc">Hapus Lampiran</flux:button>
-                            @endif
-                        </div>
-                    </form>
+                    <button type="button" class="btn btn-danger btn-small" wire:click="mintaKonfirmasiHapusLc">Hapus</button>
                 @endif
+            </span>
+        @else
+            <span class="text-zinc-500 dark:text-zinc-400">Dokumen LC belum dilampirkan</span>
+        @endif
+    </div>
 
-                @if ($this->detailKonfirmasi)
+    @can('updateAcuan', $pengajuan)
+        <form wire:submit="simpanAcuan" class="mt-4 space-y-4 rounded-2xl border border-line p-4 dark:border-night-line">
+            <flux:heading level="3">Isi / Ubah Data LC</flux:heading>
+            <flux:text size="sm">Diisi dari dokumen LC yang terbit — data ini menjadi patokan pemeriksaan otomatis.</flux:text>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <flux:input wire:model="acuanNomorInvoice" label="Nomor Invoice" type="text" />
+                <flux:input wire:model="acuanNomorLc" label="Nomor LC" type="text" />
+                <flux:input wire:model="acuanNamaApplicant" label="Nama Applicant" type="text" />
+                <flux:input wire:model="acuanNomorPo" label="Nomor PO" type="text" />
+                <flux:select wire:model="acuanMataUang" label="Mata Uang Acuan">
+                    <option value="">— Pilih —</option>
+                    @foreach (\App\Enums\MataUang::cases() as $mataUang)
+                        <option value="{{ $mataUang->value }}">{{ $mataUang->label() }}</option>
+                    @endforeach
+                </flux:select>
+                <flux:input wire:model="acuanNominal" label="Nominal Acuan" type="number" step="0.01" min="0" />
+                <flux:input wire:model="acuanToleransi" label="Toleransi (%)" type="number" step="0.01" min="0" max="100" />
+                <flux:input wire:model="acuanKuantitas" label="Kuantitas Acuan" type="number" step="0.001" min="0" />
+                <flux:input wire:model="acuanSatuan" label="Satuan Kuantitas" type="text" />
+                <flux:input wire:model="acuanTanggalTerbit" label="Tanggal Terbit LC" type="date" />
+                <flux:input wire:model="acuanTanggalKedaluwarsa" label="Tanggal Kedaluwarsa LC" type="date" />
+            </div>
+            <flux:button variant="primary" type="submit">Simpan Data LC</flux:button>
+        </form>
+
+        <livewire:pages::pengajuans.show-persyaratan :pengajuan="$pengajuan" />
+    @endcan
+
+    @if (auth()->user()->isAdmin() || auth()->user()->isOperator())
+        <form wire:submit="unggahLc" class="mt-4 space-y-4 rounded-2xl border border-line p-4 dark:border-night-line">
+            <flux:heading level="3">Lampiran Dokumen LC</flux:heading>
+            <flux:text size="sm">Berkas LC asli sebagai acuan — dapat diunduh nasabah. Berkas ini tidak diperiksa oleh checker. Format PDF, JPG, atau PNG, maksimal 5 MB.</flux:text>
+            <flux:input wire:model="uploadLc" type="file" />
+            @error('uploadLc') <flux:text size="sm" class="text-red-600 dark:text-red-400">{{ $message }}</flux:text> @enderror
+            <flux:button variant="primary" type="submit">{{ $pengajuan->path_file_lc ? 'Ganti Dokumen LC' : 'Lampirkan Dokumen LC' }}</flux:button>
+        </form>
+    @endif
+
+    @if ($this->detailKonfirmasi)
                     <flux:modal wire:model="modalKonfirmasi" class="md:w-md">
                         <div class="space-y-5">
                             <div class="flex items-start gap-3">
@@ -350,4 +335,4 @@ new class extends Component
                         </div>
                     </flux:modal>
                 @endif
-            </div>
+</section>

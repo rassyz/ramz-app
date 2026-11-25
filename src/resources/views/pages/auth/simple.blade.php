@@ -3,11 +3,11 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-[#f1f1f8] antialiased dark:bg-zinc-950">
+    <body class="min-h-screen bg-lavender antialiased dark:bg-zinc-950">
         <div class="flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
             <div class="grid w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-[0_20px_60px_rgb(67,83,255,0.10)] dark:bg-zinc-900 lg:grid-cols-5">
                 {{-- Panel brand (Fase 8): biru primer, deskripsi sistem yang faktual. --}}
-                <div class="relative flex flex-col gap-6 bg-gradient-to-br from-[#4353ff] to-[#6d7cff] p-8 text-white lg:col-span-2">
+                <div class="relative flex flex-col gap-6 bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-8 text-white lg:col-span-2">
                     <a href="{{ route('home') }}" class="flex items-center gap-3 font-medium" wire:navigate>
                         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15">
                             <x-app-logo-icon class="size-7 fill-current text-white" />

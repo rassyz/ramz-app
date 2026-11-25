@@ -385,115 +385,87 @@ new class extends Component
     }
 }; ?>
 
-<div>
-    <flux:separator class="my-8" />
-
-    <div>
-        <div class="flex flex-wrap items-center gap-3">
-            <flux:heading level="2">Dokumen Pendukung</flux:heading>
-            @if ($this->persyaratanDisesuaikan)
-                <flux:badge color="amber">Persyaratan disesuaikan dari templat</flux:badge>
-            @endif
-        </div>
-        <flux:subheading>Dokumen yang dipersyaratkan oleh jenis layanan pengajuan ini beserta status unggahannya.</flux:subheading>
+<section class="tile md:col-span-2 xl:col-span-8">
+    <div class="flex flex-wrap items-center gap-2.5">
+        <h2 class="text-[15px] font-bold tracking-[-0.01em] text-zinc-900 dark:text-white">Dokumen Pendukung</h2>
+        @if ($this->persyaratanDisesuaikan)
+            <span class="pill pill-amber">Persyaratan disesuaikan dari templat</span>
+        @endif
+    </div>
+    <p class="mt-1.5 mb-4 text-[13px] text-mist dark:text-zinc-400">Dokumen yang dipersyaratkan oleh jenis layanan pengajuan ini beserta status unggahannya.</p>
 
         @php
             $petaDokumen = $this->dokumens->keyBy(fn ($d) => strtolower(trim($d->jenis_dokumen)));
         @endphp
 
-        {{-- Kartu dokumen (mobile) — Fase 8.2 --}}
-        <div class="mt-4 space-y-3 lg:hidden">
-            @forelse ($pengajuan->persyaratanBerlaku() as $syarat)
-                @php $dokumen = $petaDokumen->get(strtolower(trim($syarat['nama']))); @endphp
-                <div class="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-700">
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="font-medium">
-                            {{ $syarat['nama'] }}
-                            <flux:badge size="sm" :color="$syarat['wajib'] ? 'blue' : 'zinc'">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</flux:badge>
-                        </span>
-                        <flux:badge :color="$dokumen ? 'green' : 'amber'">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</flux:badge>
-                    </div>
-                    <p class="mt-2 wrap-break-word text-sm text-zinc-500 dark:text-zinc-400">
-                        @if ($dokumen)
-                            {{ $dokumen->nama_file_asli }} ({{ $dokumen->ukuranFormatted() }})
-                        @else
-                            Belum ada berkas diunggah.
-                        @endif
-                    </p>
-                    @if ($dokumen)
-                        <div class="mt-3 flex gap-2">
-                            <flux:button :href="route('dokumens.download', $dokumen)" class="flex-1">Unduh</flux:button>
-                            @can('delete', $dokumen)
-                                <flux:button variant="danger" class="flex-1" wire:click="mintaKonfirmasiHapusDokumen({{ $dokumen->id }})">Hapus</flux:button>
-                            @endcan
-                        </div>
-                    @endif
-                </div>
-            @empty
-                <flux:text>Layanan ini belum memiliki persyaratan dokumen.</flux:text>
-            @endforelse
-        </div>
-
-        <div class="mt-4 hidden lg:block">
-        <flux:table class="mt-4">
-            <flux:table.columns>
-                <flux:table.column>Dokumen</flux:table.column>
-                <flux:table.column>Status</flux:table.column>
-                <flux:table.column>Berkas</flux:table.column>
-                <flux:table.column></flux:table.column>
-            </flux:table.columns>
-            <flux:table.rows>
-                @forelse ($pengajuan->persyaratanBerlaku() as $syarat)
-                    @php $dokumen = $petaDokumen->get(strtolower(trim($syarat['nama']))); @endphp
-                    <flux:table.row>
-                        <flux:table.cell class="font-medium">
-                            {{ $syarat['nama'] }}
-                            <flux:badge size="sm" :color="$syarat['wajib'] ? 'blue' : 'zinc'">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</flux:badge>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            <flux:badge :color="$dokumen ? 'green' : 'amber'">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</flux:badge>
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            @if ($dokumen)
-                                {{ $dokumen->nama_file_asli }} ({{ $dokumen->ukuranFormatted() }})
-                            @else
-                                -
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            @if ($dokumen)
-                                <div class="flex justify-end gap-2">
-                                    <flux:button size="sm" :href="route('dokumens.download', $dokumen)">Unduh</flux:button>
-                                    @can('delete', $dokumen)
-                                        <flux:button size="sm" variant="danger" wire:click="mintaKonfirmasiHapusDokumen({{ $dokumen->id }})">Hapus</flux:button>
-                                    @endcan
-                                </div>
-                            @endif
-                        </flux:table.cell>
-                    </flux:table.row>
-                @empty
-                    <flux:table.row>
-                        <flux:table.cell>Layanan ini belum memiliki persyaratan dokumen.</flux:table.cell>
-                        <flux:table.cell></flux:table.cell>
-                        <flux:table.cell></flux:table.cell>
-                        <flux:table.cell></flux:table.cell>
-                    </flux:table.row>
-                @endforelse
-            </flux:table.rows>
-        </flux:table>
+        <div class="-mx-4.25 overflow-x-auto px-4.25 sm:-mx-5.5 sm:px-5.5">
+            <table class="tabel-kartu w-full text-sm">
+                <thead>
+                    <tr class="border-b border-line text-left dark:border-night-line">
+                        <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Jenis</th>
+                        <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Berkas</th>
+                        <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Diunggah</th>
+                        <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Status</th>
+                        <th class="pb-2.5 text-[11px] font-bold tracking-[0.07em] text-zinc-400 uppercase">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($pengajuan->persyaratanBerlaku() as $syarat)
+                        @php
+                            $dokumen = $petaDokumen->get(strtolower(trim($syarat['nama'])));
+                        @endphp
+                        <tr class="border-b border-line last:border-b-0 dark:border-night-line" wire:key="dokumen-baris-{{ $loop->index }}">
+                            <td class="py-3.25 pr-3" data-label="Jenis">
+                                <span class="font-mono text-[13px] font-bold text-zinc-900 dark:text-white">{{ $syarat['nama'] }}</span>
+                                <span class="pill {{ $syarat['wajib'] ? 'pill-indigo' : 'pill-zinc' }} px-2 py-0.5 text-[10.5px]">{{ $syarat['wajib'] ? 'Wajib' : 'Opsional' }}</span>
+                            </td>
+                            <td class="py-3.25 pr-3 text-[13.5px] text-zinc-600 dark:text-zinc-300" data-label="Berkas">
+                                @if ($dokumen)
+                                    <span class="break-all">{{ $dokumen->nama_file_asli }}</span>
+                                    <span class="block text-[12px] text-mist dark:text-zinc-400">{{ $dokumen->ukuranFormatted() }}</span>
+                                @else
+                                    <span class="text-mist dark:text-zinc-400">— belum diunggah</span>
+                                @endif
+                            </td>
+                            <td class="py-3.25 pr-3 text-[13.5px] whitespace-nowrap text-zinc-500 dark:text-zinc-400" data-label="Diunggah">
+                                @if ($dokumen)
+                                    <span title="{{ $dokumen->updated_at->format('d M Y H:i') }}">{{ $dokumen->updated_at->diffForHumans() }}</span>
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td class="py-3.25 pr-3" data-label="Status"><span class="pill {{ $dokumen ? 'pill-green' : 'pill-amber' }}">{{ $dokumen ? 'Terunggah' : 'Belum Diunggah' }}</span></td>
+                            <td class="aksi py-3.25" data-label="Aksi">
+                                @if ($dokumen)
+                                    <span class="flex gap-2">
+                                        <a href="{{ route('dokumens.download', $dokumen) }}" class="btn btn-small">Unduh</a>
+                                        @can('delete', $dokumen)
+                                            <button type="button" class="btn btn-danger btn-small" wire:click="mintaKonfirmasiHapusDokumen({{ $dokumen->id }})">Hapus</button>
+                                        @endcan
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td class="py-6 text-center text-[13.5px] text-zinc-500 dark:text-zinc-400" colspan="5">Layanan ini belum memiliki persyaratan dokumen.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
 
         @if ($this->dapatKelolaDokumen)
-            <form wire:submit="unggahDokumen" class="mt-6 max-w-xl space-y-4">
-                <flux:heading level="3">Unggah / Ganti Dokumen</flux:heading>
+            <form wire:submit="unggahDokumen" class="mt-4.5 rounded-[18px] border-[1.5px] border-dashed border-line p-4.5 dark:border-night-line">
+                <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Unggah / Ganti Dokumen</h3>
 
-                <flux:select wire:model.live="uploadJenis" label="Jenis Dokumen" placeholder="Pilih jenis dokumen">
-                    @foreach ($this->daftarJenisDokumen as $jenis)
-                        <option value="{{ $jenis }}">{{ $jenis }}{{ $petaDokumen->has(strtolower(trim($jenis))) ? ' (sudah ada — unggah ulang untuk mengganti)' : '' }}</option>
-                    @endforeach
-                </flux:select>
+                <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
+                    <flux:select wire:model.live="uploadJenis" label="Jenis Dokumen" placeholder="Pilih jenis dokumen">
+                        @foreach ($this->daftarJenisDokumen as $jenis)
+                            <option value="{{ $jenis }}">{{ $jenis }}{{ $petaDokumen->has(strtolower(trim($jenis))) ? ' (sudah ada — unggah ulang untuk mengganti)' : '' }}</option>
+                        @endforeach
+                    </flux:select>
 
                 <flux:input wire:model="uploadFile" label="Berkas (PDF/JPG/PNG, maks 5 MB)" type="file" />
+                </div>
                 @error('uploadFile')
                     <flux:text class="text-red-500">{{ $message }}</flux:text>
                 @enderror
@@ -504,16 +476,19 @@ new class extends Component
                         ->contains(fn ($syarat) => strtolower(trim($syarat['nama'])) === $jenisKunci && ($syarat['wajib'] ?? false));
                 @endphp
                 @if ($jenisWajibTerpilih)
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data yang tertera pada dokumen — diisi persis seperti pada dokumen, dipakai untuk pemeriksaan otomatis:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNomorDokumen" label="Nomor Dokumen" type="text" required />
                         <flux:input wire:model="docTanggalDokumen" label="Tanggal Dokumen" type="date" required />
+                        </div>
                     </div>
                 @endif
 
                 @if ($this->jenisTerpilihInvoice)
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Invoice:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNomorInvoice" label="Nomor Invoice pada Dokumen" type="text" required />
                         <flux:input wire:model="docIdentitas" label="Identitas Nasabah pada Dokumen" type="text" required />
                         <flux:input wire:model="docNominal" label="Nominal pada Dokumen" type="number" step="0.01" min="0" required />
@@ -524,12 +499,14 @@ new class extends Component
                         </flux:select>
                         <flux:input wire:model="docNomorLc" label="Nomor LC pada Dokumen" type="text" required />
                         <flux:input wire:model="docNomorPo" label="Nomor PO pada Dokumen" type="text" required />
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'faktur pajak'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Faktur Pajak:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNomorLc" label="Nomor LC pada Dokumen" type="text" required />
                         <flux:input wire:model="docNomorInvoice" label="Nomor Invoice pada Dokumen" type="text" required />
                         <flux:input wire:model="docNominal" label="Nominal pada Dokumen (Total DPP + PPN)" type="number" step="0.01" min="0" required />
@@ -539,57 +516,70 @@ new class extends Component
                             @endforeach
                         </flux:select>
                         <flux:input wire:model="docIdentitas" label="Identitas Penjual pada Dokumen" type="text" required />
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'draft'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Draft (wesel):</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNominal" label="Nominal pada Dokumen" type="number" step="0.01" min="0" required />
                         <flux:select wire:model="docMataUang" label="Mata Uang pada Dokumen" required>
                             @foreach (MataUang::cases() as $mataUang)
                                 <option value="{{ $mataUang->value }}">{{ $mataUang->label() }}</option>
                             @endforeach
                         </flux:select>
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'asuransi'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Asuransi:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNominal" label="Nilai Pertanggungan pada Dokumen" type="number" step="0.01" min="0" required />
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'surat jalan'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Surat Jalan:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docNomorLc" label="Nomor LC pada Dokumen" type="text" required />
                         <flux:input wire:model="docNomorPo" label="Nomor PO pada Dokumen" type="text" required />
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'packing list'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Packing List:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docKuantitas" label="Kuantitas pada Dokumen" type="number" step="0.001" min="0" required />
                         <flux:input wire:model="docSatuan" label="Satuan Kuantitas" type="text" required />
+                        </div>
                     </div>
                 @endif
 
                 @if (str_contains($jenisKunci, 'bill of lading'))
-                    <div class="space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <div class="mt-4 rounded-[14px] bg-soft p-4 dark:bg-night-soft">
                         <flux:text class="font-medium">Data khusus Bill of Lading:</flux:text>
+                        <div class="mt-3.5 grid gap-4 sm:grid-cols-2">
                         <flux:input wire:model="docIdentitasPengirim" label="Identitas Pengirim (Shipper) pada Dokumen" type="text" required />
+                        </div>
                     </div>
                 @endif
 
-                <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Unggah Dokumen</flux:button>
+                <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <flux:button variant="primary" type="submit" class="w-full sm:w-auto">Unggah Dokumen</flux:button>
+                    <span class="text-[12.5px] text-mist dark:text-zinc-400">Setiap unggahan otomatis menjalankan pemeriksaan ulang terhadap Data LC.</span>
+                </div>
             </form>
         @elseif (auth()->user()->isNasabah())
             <flux:text class="mt-4 block">Dokumen tidak dapat diubah pada status pengajuan saat ini.</flux:text>
         @endif
-    </div>
 
     @if ($this->detailKonfirmasi)
         <flux:modal wire:model="modalKonfirmasi" class="md:w-md">
@@ -612,4 +602,4 @@ new class extends Component
             </div>
         </flux:modal>
     @endif
-</div>
+</section>

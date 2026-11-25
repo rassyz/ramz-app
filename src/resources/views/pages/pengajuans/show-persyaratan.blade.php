@@ -80,7 +80,7 @@ new class extends Component
     }
 }; ?>
 
-                    <form wire:submit="simpanPersyaratan" class="mt-4 space-y-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                    <form wire:submit="simpanPersyaratan" class="mt-4 space-y-4 rounded-2xl border border-line p-4 dark:border-night-line">
                         <flux:heading level="3">Persyaratan Dokumen Pengajuan Ini</flux:heading>
                         <flux:text size="sm">Snapshot dari templat layanan saat pengajuan dibuat — sesuaikan dengan klausul dokumen pada LC pengajuan ini bila berbeda.</flux:text>
                         @foreach ($syaratBaris as $indeks => $baris)

@@ -48,4 +48,17 @@ class LaporanService
             ->oldest()
             ->get();
     }
+
+    /**
+     * Varian terpaginasi dari daftarPengajuan() untuk tabel rinci
+     * di halaman Laporan; kueri dan urutannya sama persis.
+     */
+    public function daftarPengajuanPaginasi(CarbonInterface $mulai, CarbonInterface $selesai)
+    {
+        return Pengajuan::query()
+            ->with(['user', 'layanan'])
+            ->whereBetween('created_at', [$mulai, $selesai])
+            ->oldest()
+            ->paginate(10);
+    }
 }
