@@ -85,12 +85,8 @@ new #[Title('Laporan')] class extends Component
             <flux:heading level="2" size="xl" class="mt-1">{{ $this->laporan['ringkasan']['selesai'] }}</flux:heading>
         </div>
         <div class="rounded-xl border border-neutral-200 p-5 dark:border-neutral-700">
-            <flux:text>Total Pembayaran (per Mata Uang)</flux:text>
-            @forelse ($this->laporan['ringkasan']['pembayaran_per_mata_uang'] as $baris)
-                <flux:heading level="2" size="lg" class="mt-1">{{ $baris['mata_uang']->value }} {{ number_format($baris['total'], 2, ',', '.') }}</flux:heading>
-            @empty
-                <flux:heading level="2" size="xl" class="mt-1">-</flux:heading>
-            @endforelse
+            <flux:text>Dokumen Terunggah</flux:text>
+            <flux:heading level="2" size="xl" class="mt-1">{{ $this->laporan['ringkasan']['total_dokumen'] }}</flux:heading>
         </div>
     </div>
 
@@ -125,26 +121,6 @@ new #[Title('Laporan')] class extends Component
 
     <div class="mt-4 grid gap-4 lg:grid-cols-2">
         <div class="rounded-xl border border-neutral-200 p-5 dark:border-neutral-700">
-            <flux:heading level="2">Pembayaran per Status</flux:heading>
-            <flux:table class="mt-3">
-                <flux:table.rows>
-                    @foreach ($this->laporan['pembayaran_per_status'] as $baris)
-                        <flux:table.row>
-                            <flux:table.cell><flux:badge :color="$baris['status']->color()">{{ $baris['status']->label() }}</flux:badge></flux:table.cell>
-                            <flux:table.cell>{{ $baris['jumlah'] }} pembayaran</flux:table.cell>
-                            <flux:table.cell class="text-right">
-                                @forelse ($baris['total_per_mata_uang'] as $total)
-                                    <div>{{ $total['mata_uang']->value }} {{ number_format($total['total'], 2, ',', '.') }}</div>
-                                @empty
-                                    -
-                                @endforelse
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforeach
-                </flux:table.rows>
-            </flux:table>
-        </div>
-        <div class="rounded-xl border border-neutral-200 p-5 dark:border-neutral-700">
             <flux:heading level="2">Ringkasan Pemeriksaan Checker</flux:heading>
             <div class="mt-3 space-y-2">
                 <flux:text class="block">Total pemeriksaan: <strong>{{ $this->laporan['pemeriksaan']['total'] }}</strong></flux:text>
@@ -167,7 +143,8 @@ new #[Title('Laporan')] class extends Component
                     <flux:table.column>Nasabah</flux:table.column>
                     <flux:table.column>Layanan</flux:table.column>
                     <flux:table.column>Status</flux:table.column>
-                    <flux:table.column>Pembayaran</flux:table.column>
+                    <flux:table.column>Nomor LC</flux:table.column>
+                    <flux:table.column>Nominal Acuan</flux:table.column>
                 </flux:table.columns>
                 <flux:table.rows>
                     @foreach ($this->laporan['pengajuans'] as $pengajuan)
@@ -178,12 +155,9 @@ new #[Title('Laporan')] class extends Component
                             <flux:table.cell>{{ $pengajuan->layanan->nama }}</flux:table.cell>
                             <flux:table.cell><flux:badge :color="$pengajuan->status->color()">{{ $pengajuan->status->label() }}</flux:badge></flux:table.cell>
                             <flux:table.cell>
-                                @if ($pengajuan->pembayaran)
-                                    {{ $pengajuan->pembayaran->nominalFormatted() }} — {{ $pengajuan->pembayaran->status->label() }}
-                                @else
-                                    -
-                                @endif
+                                {{ $pengajuan->nomor_lc ?? '-' }}
                             </flux:table.cell>
+                            <flux:table.cell>{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</flux:table.cell>
                         </flux:table.row>
                     @endforeach
                 </flux:table.rows>

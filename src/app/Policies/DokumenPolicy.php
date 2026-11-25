@@ -10,9 +10,10 @@ use App\Models\User;
 /**
  * Kebijakan akses dokumen pendukung pengajuan:
  * - Melihat/mengunduh: nasabah pemilik, Admin, dan Operator.
- * - Mengunggah/mengganti/menghapus: hanya nasabah pemilik, dan hanya
- *   selama pengajuan berada pada status yang masih dapat diubah
- *   (menunggu verifikasi atau perlu perbaikan).
+ * - Mengunggah/mengganti: nasabah pemilik; khusus pengajuan Impor
+ *   juga Operator (dokumen tiba dari jasa pengiriman). Menghapus:
+ *   nasabah pemilik. Semua hanya selama pengajuan berada pada status
+ *   yang masih dapat diubah (menunggu verifikasi/perlu perbaikan).
  */
 class DokumenPolicy
 {
@@ -25,9 +26,18 @@ class DokumenPolicy
 
     public function create(User $user, Pengajuan $pengajuan): bool
     {
-        return $user->isNasabah()
-            && $pengajuan->user_id === $user->id
-            && $this->dalamJendelaUbah($pengajuan);
+        if (! $this->dalamJendelaUbah($pengajuan)) {
+            return false;
+        }
+
+        if ($user->isNasabah()) {
+            return $pengajuan->user_id === $user->id;
+        }
+
+        // Fase 11: dokumen Impor tiba dari jasa pengiriman, sehingga
+        // Operator yang mengunggah atas nama nasabah.
+        return $user->isOperator()
+            && $pengajuan->layanan?->kode === 'IMP';
     }
 
     public function delete(User $user, Dokumen $dokumen): bool

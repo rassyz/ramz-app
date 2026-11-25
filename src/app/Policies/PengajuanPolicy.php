@@ -10,7 +10,8 @@ use App\Models\User;
  * Kebijakan akses pengajuan:
  * - Admin dan Operator dapat melihat seluruh pengajuan (pantauan).
  * - Nasabah hanya dapat melihat pengajuan miliknya sendiri.
- * - Pembuatan pengajuan hanya oleh Nasabah.
+ * - Pembuatan pengajuan oleh staf (Admin/Operator) untuk nasabah
+ *   (Fase 11 — akun nasabah baru ada setelah LC turun).
  * - Pembatalan hanya oleh pemilik, selama masih menunggu verifikasi.
  * Penyaringan daftar per peran dilakukan pada query di halaman
  * (scoping), policy ini menegakkan akses per record.
@@ -37,27 +38,36 @@ class PengajuanPolicy
     }
 
     /**
-     * Hanya nasabah yang mengajukan layanan.
+     * Pengajuan dibuat oleh staf untuk nasabah (Fase 11).
      */
     public function create(User $user): bool
     {
-        return $user->isNasabah();
+        return $user->isAdmin() || $user->isOperator();
     }
 
     /**
      * Nasabah membatalkan pengajuannya sendiri yang masih
      * berstatus menunggu verifikasi.
      */
-    public function cancel(User $user, Pengajuan $pengajuan): bool
+    /**
+     * Hapus permanen hanya oleh Admin dan hanya untuk pengajuan yang
+     * sudah Dibatalkan (Fase 11) — membersihkan data uji/salah input
+     * yang telah diakhiri. Seluruh data anak (dokumen, hasil
+     * pemeriksaan, verifikasi, riwayat, pembayaran lama) terhapus
+     * mengikuti cascade basis data; log aktivitas & notifikasi
+     * bertahan tanpa tautan (nullOnDelete) sebagai jejak audit.
+     */
+    public function delete(User $user, Pengajuan $pengajuan): bool
     {
-        return $user->isNasabah()
-            && $pengajuan->user_id === $user->id
-            && $pengajuan->status === StatusPengajuan::MenungguVerifikasi;
+        return $user->isAdmin()
+            && $pengajuan->status === StatusPengajuan::Dibatalkan;
     }
 
     /**
      * Hanya Operator, dan hanya saat pengajuan menunggu verifikasi.
      * Admin tidak memverifikasi (Tabel 3.3 dokumen patokan).
+     * (Dipulihkan pada Perbaikan 4 — method ini beserta updateStatus
+     * dan resubmit sempat hilang dari policy Fase 11.)
      */
     public function verify(User $user, Pengajuan $pengajuan): bool
     {
@@ -76,13 +86,15 @@ class PengajuanPolicy
     }
 
     /**
-     * Operator mengelola status pembayaran selama pengajuan
-     * belum dibatalkan.
+     * Staf (Admin/Operator) mengisi & mengubah data acuan LC serta
+     * snapshot persyaratan selama pengajuan belum berakhir — nomor
+     * invoice acuan misalnya baru diketahui setelah LC turun dan
+     * barang diserahkan, bisa jadi setelah verifikasi awal.
      */
-    public function updatePembayaran(User $user, Pengajuan $pengajuan): bool
+    public function updateAcuan(User $user, Pengajuan $pengajuan): bool
     {
-        return $user->isOperator()
-            && $pengajuan->status !== StatusPengajuan::Dibatalkan;
+        return ($user->isAdmin() || $user->isOperator())
+            && ! in_array($pengajuan->status, [StatusPengajuan::Selesai, StatusPengajuan::Dibatalkan], true);
     }
 
     /**
@@ -94,5 +106,19 @@ class PengajuanPolicy
         return $user->isNasabah()
             && $pengajuan->user_id === $user->id
             && $pengajuan->status === StatusPengajuan::PerluPerbaikan;
+    }
+
+    public function cancel(User $user, Pengajuan $pengajuan): bool
+    {
+        if ($pengajuan->status !== StatusPengajuan::MenungguVerifikasi) {
+            return false;
+        }
+
+        // Nasabah membatalkan pengajuannya sendiri; staf (Admin/
+        // Operator) membatalkan pengajuan yang salah input saat
+        // pembuatan (Fase 11 — pengajuan dibuat oleh staf).
+        return ($user->isNasabah() && $pengajuan->user_id === $user->id)
+            || $user->isAdmin()
+            || $user->isOperator();
     }
 }

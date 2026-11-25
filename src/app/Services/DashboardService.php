@@ -2,12 +2,11 @@
 
 namespace App\Services;
 
-use App\Enums\MataUang;
 use App\Enums\StatusHasilPemeriksaan;
 use App\Enums\StatusPengajuan;
 use App\Models\HasilPemeriksaan;
 use App\Models\Layanan;
-use App\Models\Pembayaran;
+use App\Models\Dokumen;
 use App\Models\Pengajuan;
 use App\Models\RiwayatStatus;
 use App\Models\User;
@@ -34,36 +33,29 @@ class DashboardService
     }
 
     /**
-     * Kartu ringkasan + total pembayaran yang dikelompokkan per mata
-     * uang (tidak pernah dijumlahkan lintas mata uang).
+     * Kartu ringkasan + jumlah dokumen terunggah pada pengajuan dalam
+     * periode (Fase 11: ringkasan pembayaran pensiun mengikuti model
+     * LC — fokus sistem adalah dokumen).
      *
-     * @return array{total: int, menunggu_verifikasi: int, perlu_perbaikan: int, selesai: int, pembayaran_per_mata_uang: list<array{mata_uang: MataUang, total: float}>}
+     * @return array{total: int, menunggu_verifikasi: int, perlu_perbaikan: int, selesai: int, total_dokumen: int}
      */
     public function ringkasan(User $user, CarbonInterface $mulai, CarbonInterface $selesai): array
     {
         $dasar = $this->queryPengajuan($user, $mulai, $selesai);
 
-        $pembayaran = Pembayaran::query()
+        $totalDokumen = Dokumen::query()
             ->whereHas('pengajuan', function (Builder $q) use ($user, $mulai, $selesai) {
                 $q->whereBetween('created_at', [$mulai, $selesai])
                     ->when($user->isNasabah(), fn(Builder $sub) => $sub->where('user_id', $user->id));
             })
-            ->selectRaw('mata_uang, SUM(nominal) as total_nominal')
-            ->groupBy('mata_uang')
-            ->orderBy('mata_uang')
-            ->get()
-            ->map(fn($baris) => [
-                'mata_uang' => $baris->mata_uang,
-                'total' => (float) $baris->total_nominal,
-            ])
-            ->all();
+            ->count();
 
         return [
             'total' => (clone $dasar)->count(),
             'menunggu_verifikasi' => (clone $dasar)->where('status', StatusPengajuan::MenungguVerifikasi)->count(),
             'perlu_perbaikan' => (clone $dasar)->where('status', StatusPengajuan::PerluPerbaikan)->count(),
             'selesai' => (clone $dasar)->where('status', StatusPengajuan::Selesai)->count(),
-            'pembayaran_per_mata_uang' => $pembayaran,
+            'total_dokumen' => $totalDokumen,
         ];
     }
 
@@ -255,7 +247,7 @@ class DashboardService
     public function pengajuanTerbaru(User $user, CarbonInterface $mulai, CarbonInterface $selesai, int $batas)
     {
         return $this->queryPengajuan($user, $mulai, $selesai)
-            ->with(['user', 'layanan', 'pembayaran'])
+            ->with(['user', 'layanan'])
             ->latest()
             ->limit($batas)
             ->get();

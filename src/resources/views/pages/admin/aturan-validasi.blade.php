@@ -64,6 +64,8 @@ new #[Title('Aturan Validasi')] class extends Component
             <flux:table.column>Nama Aturan</flux:table.column>
             <flux:table.column>Kategori</flux:table.column>
             <flux:table.column>Field</flux:table.column>
+            <flux:table.column>Jenis Dokumen</flux:table.column>
+            <flux:table.column>Referensi Acuan</flux:table.column>
             <flux:table.column>Keterangan</flux:table.column>
             <flux:table.column>Status</flux:table.column>
             <flux:table.column></flux:table.column>
@@ -76,6 +78,8 @@ new #[Title('Aturan Validasi')] class extends Component
                     <flux:table.cell>{{ $aturan->nama }}</flux:table.cell>
                     <flux:table.cell><flux:badge :color="$aturan->kategori->value === 'kelengkapan' ? 'blue' : 'violet'">{{ $aturan->kategori->label() }}</flux:badge></flux:table.cell>
                     <flux:table.cell>{{ $aturan->field ?? '-' }}</flux:table.cell>
+                    <flux:table.cell>{{ $aturan->jenis_dokumen ?? 'Umum' }}</flux:table.cell>
+                    <flux:table.cell>{{ $aturan->referensi ?? '-' }}</flux:table.cell>
                     <flux:table.cell>{{ $aturan->keterangan }}</flux:table.cell>
                     <flux:table.cell>
                         <flux:badge :color="$aturan->is_active ? 'green' : 'zinc'">{{ $aturan->is_active ? 'Aktif' : 'Nonaktif' }}</flux:badge>

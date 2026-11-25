@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\KategoriAturan;
-use App\Models\DetailPemeriksaan;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,10 +17,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $nama
  * @property KategoriAturan $kategori
  * @property string|null $field
+ * @property string|null $jenis_dokumen
+ * @property string|null $referensi
  * @property string|null $keterangan
  * @property bool $is_active
  */
-#[Fillable(['kode', 'nama', 'kategori', 'field', 'keterangan', 'is_active'])]
+#[Fillable(['kode', 'nama', 'kategori', 'field', 'jenis_dokumen', 'referensi', 'keterangan', 'is_active'])]
 class AturanValidasi extends Model
 {
     protected $table = 'aturan_validasis';

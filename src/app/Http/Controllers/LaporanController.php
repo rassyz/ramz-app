@@ -39,9 +39,9 @@ class LaporanController extends Controller
                 'Layanan',
                 'Nomor Invoice',
                 'Status Pengajuan',
-                'Nominal',
-                'Mata Uang',
-                'Status Pembayaran',
+                'Nomor LC',
+                'Nominal Acuan',
+                'Mata Uang Acuan',
             ]);
 
             foreach ($pengajuans as $pengajuan) {
@@ -53,9 +53,9 @@ class LaporanController extends Controller
                     $pengajuan->layanan->nama,
                     $pengajuan->nomor_invoice,
                     $pengajuan->status->label(),
-                    $pengajuan->pembayaran ? number_format((float) $pengajuan->pembayaran->nominal, 2, '.', '') : '',
-                    $pengajuan->pembayaran?->mata_uang->value ?? '',
-                    $pengajuan->pembayaran?->status->label() ?? '',
+                    $pengajuan->nomor_lc ?? '',
+                    $pengajuan->nominal_acuan !== null ? number_format((float) $pengajuan->nominal_acuan, 2, '.', '') : '',
+                    $pengajuan->mata_uang_acuan?->value ?? '',
                 ]);
             }
 

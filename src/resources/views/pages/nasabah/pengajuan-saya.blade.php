@@ -1,13 +1,7 @@
 <?php
 
-use App\Enums\MataUang;
 use App\Enums\StatusPengajuan;
-use App\Models\Layanan;
 use App\Models\Pengajuan;
-use App\Services\NotifikasiService;
-use Flux\Flux;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -17,138 +11,32 @@ new #[Title('Pengajuan Saya')] class extends Component
 {
     use WithPagination;
 
-    // Form buat pengajuan baru
-    public ?int $layanan_id = null;
-
-    public string $nomor_invoice = '';
-
-    public string $nominal = '';
-
-    public string $mata_uang = 'USD';
-
     /**
      * Halaman ini hanya untuk Nasabah.
      */
     public function mount(): void
     {
         abort_unless(auth()->user()->isNasabah(), 403);
-        $this->authorize('create', Pengajuan::class);
-    }
-
-    #[Computed]
-    public function layanansAktif()
-    {
-        return Layanan::aktif()->orderBy('nama')->get();
-    }
-
-    #[Computed]
-    public function layananTerpilih(): ?Layanan
-    {
-        return $this->layanan_id ? Layanan::find($this->layanan_id) : null;
     }
 
     #[Computed]
     public function pengajuans()
     {
         return auth()->user()->pengajuans()
-            ->with(['layanan', 'pembayaran'])
+            ->with(['layanan'])
             ->latest()
             ->paginate(10);
     }
 
-    public function buatPengajuan(): void
-    {
-        $this->authorize('create', Pengajuan::class);
-
-        $validated = $this->validate([
-            'layanan_id' => ['required', Rule::exists('layanans', 'id')->where('is_active', true)],
-            'nomor_invoice' => ['required', 'string', 'max:100'],
-            'nominal' => ['required', 'numeric', 'min:0.01'],
-            'mata_uang' => ['required', Rule::enum(MataUang::class)],
-        ]);
-
-        $pengajuan = null;
-
-        DB::transaction(function () use ($validated, &$pengajuan) {
-            $pengajuan = Pengajuan::create([
-                'nomor_pengajuan' => Pengajuan::generateNomorPengajuan(),
-                'user_id' => auth()->id(),
-                'layanan_id' => $validated['layanan_id'],
-                'nomor_invoice' => $validated['nomor_invoice'],
-                'status' => StatusPengajuan::MenungguVerifikasi,
-            ]);
-
-            $pengajuan->pembayaran()->create([
-                'nominal' => $validated['nominal'],
-                'mata_uang' => $validated['mata_uang'],
-            ]);
-
-            $pengajuan->riwayatStatuses()->create([
-                'status_dari' => null,
-                'status_ke' => StatusPengajuan::MenungguVerifikasi,
-                'catatan' => 'Pengajuan dibuat.',
-                'changed_by' => auth()->id(),
-            ]);
-        });
-
-        app(NotifikasiService::class)->pengajuanDibuat($pengajuan);
-
-        Flux::toast(variant: 'success', text: 'Pengajuan '.$pengajuan->nomor_pengajuan.' berhasil dibuat. Unggah dokumen pendukung akan tersedia pada tahap berikutnya.');
-
-        $this->reset('layanan_id', 'nomor_invoice', 'nominal');
-        $this->mata_uang = 'USD';
-        $this->resetPage();
-    }
 }; ?>
 
 <section class="w-full">
     <flux:heading level="1" size="xl">Pengajuan Saya</flux:heading>
-    <flux:subheading>Ajukan layanan perdagangan dan pembayaran internasional dan pantau statusnya di sini.</flux:subheading>
+    <flux:subheading>Pantau pengajuan layanan Anda di sini. Pengajuan baru dibuat oleh staf bank untuk Anda — silakan hubungi staf bila memerlukan pengajuan baru.</flux:subheading>
 
     <flux:separator class="mt-4 mb-6" />
 
-    <div class="space-y-8">
-        <div>
-            <flux:heading level="2">Buat Pengajuan Baru</flux:heading>
-
-            <form wire:submit="buatPengajuan" class="mt-4 space-y-4">
-                <div class="grid gap-4 sm:grid-cols-2">
-                <flux:select wire:model.live="layanan_id" label="Jenis Layanan" placeholder="Pilih layanan">
-                    @foreach ($this->layanansAktif as $layanan)
-                        <option value="{{ $layanan->id }}">{{ $layanan->nama }}</option>
-                    @endforeach
-                </flux:select>
-
-                @if ($this->layananTerpilih)
-                    <div class="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 sm:col-span-2">
-                        <flux:text class="font-medium">Dokumen yang wajib disiapkan:</flux:text>
-                        <ul class="mt-2 list-inside list-disc space-y-1">
-                            @forelse ($this->layananTerpilih->persyaratan_dokumen ?? [] as $syarat)
-                                <li>
-                                    <flux:text size="sm">{{ $syarat['nama'] }}@if (!$syarat['wajib']) (opsional)@endif</flux:text>
-                                </li>
-                            @empty
-                                <li><flux:text size="sm">Belum ada persyaratan dokumen untuk layanan ini.</flux:text></li>
-                            @endforelse
-                        </ul>
-                        <flux:text size="sm" class="mt-2 block">Dokumen diunggah setelah pengajuan dibuat — fitur unggah dokumen hadir pada tahap berikutnya.</flux:text>
-                    </div>
-                @endif
-
-                <flux:input wire:model="nomor_invoice" label="Nomor Invoice" type="text" required placeholder="mis. INV-2026-010" />
-                <flux:input wire:model="nominal" label="Nominal Pembayaran" type="number" step="0.01" min="0" required />
-                <flux:select wire:model="mata_uang" label="Mata Uang" required>
-                    @foreach (MataUang::cases() as $mataUang)
-                        <option value="{{ $mataUang->value }}">{{ $mataUang->label() }}</option>
-                    @endforeach
-                </flux:select>
-
-                </div>
-
-                <flux:button variant="primary" type="submit" class="w-full">Kirim Pengajuan</flux:button>
-            </form>
-        </div>
-
+    <div>
         <div>
             <flux:heading level="2">Daftar Pengajuan</flux:heading>
 
@@ -165,7 +53,7 @@ new #[Title('Pengajuan Saya')] class extends Component
                             <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Tanggal</dt><dd class="text-right font-medium">{{ $pengajuan->created_at->format('d M Y') }}</dd></div>
                             <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Layanan</dt><dd class="text-right font-medium">{{ $pengajuan->layanan->nama }}</dd></div>
                             <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Invoice</dt><dd class="text-right font-medium">{{ $pengajuan->nomor_invoice }}</dd></div>
-                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nominal</dt><dd class="text-right font-medium">{{ $pengajuan->pembayaran?->nominalFormatted() ?? '-' }}</dd></div>
+                            <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nominal Acuan</dt><dd class="text-right font-medium">{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</dd></div>
                         </dl>
                         <flux:button :href="route('pengajuans.show', $pengajuan)" class="mt-4 w-full">Detail</flux:button>
                     </div>
@@ -195,7 +83,7 @@ new #[Title('Pengajuan Saya')] class extends Component
                             <flux:table.cell>{{ $pengajuan->created_at->format('d M Y') }}</flux:table.cell>
                             <flux:table.cell>{{ $pengajuan->layanan->nama }}</flux:table.cell>
                             <flux:table.cell>{{ $pengajuan->nomor_invoice }}</flux:table.cell>
-                            <flux:table.cell>{{ $pengajuan->pembayaran?->nominalFormatted() ?? '-' }}</flux:table.cell>
+                            <flux:table.cell>{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</flux:table.cell>
                             <flux:table.cell><flux:badge :color="$pengajuan->status->color()">{{ $pengajuan->status->label() }}</flux:badge></flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-end">

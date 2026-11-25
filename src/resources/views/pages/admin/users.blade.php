@@ -17,6 +17,10 @@ new #[Title('Kelola Pengguna')] class extends Component
 
     public string $search = '';
 
+    public bool $modalKonfirmasi = false;
+
+    public ?int $targetKonfirmasiId = null;
+
     // Form tambah pengguna
     public string $name = '';
 
@@ -148,6 +152,53 @@ new #[Title('Kelola Pengguna')] class extends Component
         Flux::toast(variant: 'success', text: 'Pengguna berhasil diperbarui.');
     }
 
+    /**
+     * Modal konfirmasi Flux untuk penghapusan pengguna: method
+     * deleteUser() aslinya baru berjalan setelah admin menyetujui
+     * pada modal.
+     */
+    public function mintaKonfirmasiHapus(int $id): void
+    {
+        $this->targetKonfirmasiId = $id;
+        $this->modalKonfirmasi = true;
+    }
+
+    public function tutupKonfirmasi(): void
+    {
+        $this->modalKonfirmasi = false;
+        $this->targetKonfirmasiId = null;
+    }
+
+    public function jalankanAksiKonfirmasi(): void
+    {
+        $id = $this->targetKonfirmasiId;
+
+        $this->tutupKonfirmasi();
+
+        if ($id !== null) {
+            $this->deleteUser($id);
+        }
+    }
+
+    /**
+     * @return array{judul: string, isi: string, tombol: string}|null
+     */
+    #[Computed]
+    public function detailKonfirmasi(): ?array
+    {
+        $user = $this->targetKonfirmasiId !== null ? User::find($this->targetKonfirmasiId) : null;
+
+        if ($user === null) {
+            return null;
+        }
+
+        return [
+            'judul' => 'Hapus Pengguna Ini?',
+            'isi' => 'Pengguna '.$user->name.' ('.$user->email.') akan dihapus permanen dan kehilangan akses ke aplikasi. Tindakan ini tidak dapat dibatalkan.',
+            'tombol' => 'Ya, Hapus Pengguna',
+        ];
+    }
+
     public function deleteUser(int $id): void
     {
         $user = User::findOrFail($id);
@@ -235,7 +286,7 @@ new #[Title('Kelola Pengguna')] class extends Component
                                 <div class="flex justify-end gap-2">
                                     <flux:button size="sm" wire:click="startEdit({{ $user->id }})">Ubah</flux:button>
                                     @if (auth()->user()->can('delete', $user))
-                                        <flux:button size="sm" variant="danger" wire:click="deleteUser({{ $user->id }})" wire:confirm="Hapus pengguna {{ $user->name }}? Tindakan ini tidak dapat dibatalkan.">Hapus</flux:button>
+                                        <flux:button size="sm" variant="danger" wire:click="mintaKonfirmasiHapus({{ $user->id }})">Hapus</flux:button>
                                     @endif
                                 </div>
                             </flux:table.cell>
@@ -267,4 +318,26 @@ new #[Title('Kelola Pengguna')] class extends Component
             @endif
         </div>
     </div>
+
+    @if ($this->detailKonfirmasi)
+        <flux:modal wire:model="modalKonfirmasi" class="md:w-md">
+            <div class="space-y-5">
+                <div class="flex items-start gap-3">
+                    <div class="shrink-0 rounded-full bg-red-100 p-2 text-red-600 dark:bg-red-950 dark:text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <flux:heading level="2">{{ $this->detailKonfirmasi['judul'] }}</flux:heading>
+                        <flux:text class="mt-2 block">{{ $this->detailKonfirmasi['isi'] }}</flux:text>
+                    </div>
+                </div>
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <flux:button wire:click="tutupKonfirmasi">Batal</flux:button>
+                    <flux:button variant="danger" wire:click="jalankanAksiKonfirmasi">{{ $this->detailKonfirmasi['tombol'] }}</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 </section>

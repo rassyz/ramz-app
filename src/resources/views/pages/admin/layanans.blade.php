@@ -16,6 +16,10 @@ new #[Title('Master Layanan')] class extends Component
 
     public string $search = '';
 
+    public bool $modalKonfirmasi = false;
+
+    public ?int $targetKonfirmasiId = null;
+
     // Form tambah / ubah layanan
     public ?int $editingId = null;
 
@@ -145,6 +149,53 @@ new #[Title('Master Layanan')] class extends Component
         $this->resetValidation();
     }
 
+    /**
+     * Modal konfirmasi Flux untuk penghapusan layanan: method
+     * hapus() aslinya baru berjalan setelah admin menyetujui pada
+     * modal.
+     */
+    public function mintaKonfirmasiHapus(int $id): void
+    {
+        $this->targetKonfirmasiId = $id;
+        $this->modalKonfirmasi = true;
+    }
+
+    public function tutupKonfirmasi(): void
+    {
+        $this->modalKonfirmasi = false;
+        $this->targetKonfirmasiId = null;
+    }
+
+    public function jalankanAksiKonfirmasi(): void
+    {
+        $id = $this->targetKonfirmasiId;
+
+        $this->tutupKonfirmasi();
+
+        if ($id !== null) {
+            $this->hapus($id);
+        }
+    }
+
+    /**
+     * @return array{judul: string, isi: string, tombol: string}|null
+     */
+    #[Computed]
+    public function detailKonfirmasi(): ?array
+    {
+        $layanan = $this->targetKonfirmasiId !== null ? Layanan::find($this->targetKonfirmasiId) : null;
+
+        if ($layanan === null) {
+            return null;
+        }
+
+        return [
+            'judul' => 'Hapus Layanan Ini?',
+            'isi' => 'Layanan '.$layanan->nama.' ('.$layanan->kode.') akan dihapus permanen. Bila layanan ini sudah memiliki pengajuan, penghapusan akan ditolak dan layanan sebaiknya dinonaktifkan saja.',
+            'tombol' => 'Ya, Hapus Layanan',
+        ];
+    }
+
     public function hapus(int $id): void
     {
         $layanan = Layanan::findOrFail($id);
@@ -244,7 +295,7 @@ new #[Title('Master Layanan')] class extends Component
                             <flux:table.cell>
                                 <div class="flex justify-end gap-2">
                                     <flux:button size="sm" wire:click="mulaiUbah({{ $layanan->id }})">Ubah</flux:button>
-                                    <flux:button size="sm" variant="danger" wire:click="hapus({{ $layanan->id }})" wire:confirm="Hapus layanan {{ $layanan->nama }}?">Hapus</flux:button>
+                                    <flux:button size="sm" variant="danger" wire:click="mintaKonfirmasiHapus({{ $layanan->id }})">Hapus</flux:button>
                                 </div>
                             </flux:table.cell>
                         </flux:table.row>
@@ -253,4 +304,26 @@ new #[Title('Master Layanan')] class extends Component
             </flux:table>
         </div>
     </div>
+
+    @if ($this->detailKonfirmasi)
+        <flux:modal wire:model="modalKonfirmasi" class="md:w-md">
+            <div class="space-y-5">
+                <div class="flex items-start gap-3">
+                    <div class="shrink-0 rounded-full bg-red-100 p-2 text-red-600 dark:bg-red-950 dark:text-red-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="size-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <flux:heading level="2">{{ $this->detailKonfirmasi['judul'] }}</flux:heading>
+                        <flux:text class="mt-2 block">{{ $this->detailKonfirmasi['isi'] }}</flux:text>
+                    </div>
+                </div>
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <flux:button wire:click="tutupKonfirmasi">Batal</flux:button>
+                    <flux:button variant="danger" wire:click="jalankanAksiKonfirmasi">{{ $this->detailKonfirmasi['tombol'] }}</flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endif
 </section>

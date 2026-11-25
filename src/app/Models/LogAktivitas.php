@@ -54,6 +54,14 @@ class LogAktivitas extends Model
 
     const DOKUMEN_FISIK_DISETARAKAN = 'dokumen_fisik.disetarakan';
 
+    const DATA_ACUAN_DIPERBARUI = 'data_acuan.diperbarui';
+
+    const PENGAJUAN_DIHAPUS = 'pengajuan.dihapus';
+
+    const DOKUMEN_LC_DIPERBARUI = 'dokumen_lc.diperbarui';
+
+    const PERSYARATAN_DIPERBARUI = 'persyaratan.diperbarui';
+
     const PENGGUNA_DIBUAT = 'pengguna.dibuat';
 
     const PENGGUNA_DIUBAH = 'pengguna.diubah';
@@ -87,6 +95,10 @@ class LogAktivitas extends Model
             self::DOKUMEN_DIHAPUS => 'Dokumen Dihapus',
             self::PEMERIKSAAN_DIJALANKAN => 'Pemeriksaan Dijalankan',
             self::DOKUMEN_FISIK_DISETARAKAN => 'Dokumen Fisik Disetarakan',
+            self::DATA_ACUAN_DIPERBARUI => 'Data LC Diperbarui',
+            self::PENGAJUAN_DIHAPUS => 'Pengajuan Dihapus',
+            self::DOKUMEN_LC_DIPERBARUI => 'Dokumen LC Diperbarui',
+            self::PERSYARATAN_DIPERBARUI => 'Persyaratan Dokumen Diperbarui',
             self::PENGGUNA_DIBUAT => 'Pengguna Dibuat',
             self::PENGGUNA_DIUBAH => 'Pengguna Diubah',
             self::PENGGUNA_DIHAPUS => 'Pengguna Dihapus',
