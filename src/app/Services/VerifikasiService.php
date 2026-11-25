@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Enums\KeputusanVerifikasi;
-use App\Enums\StatusPembayaran;
 use App\Enums\StatusPengajuan;
 use App\Models\LogAktivitas;
 use App\Models\Pengajuan;
@@ -156,53 +155,6 @@ class VerifikasiService
             $operator,
             $pengajuan,
             ['status_dari' => $statusLama->value, 'status_ke' => $statusBaru->value]
-        );
-    }
-
-    /**
-     * Operator mengubah status pembayaran: hanya boleh berpindah ke
-     * langkah yang bersebelahan (maju atau mundur satu langkah) agar
-     * tidak ada lompatan, selama pengajuan belum dibatalkan. Pelaku
-     * perubahan terakhir dicatat pada kolom diubah_oleh.
-     */
-    public function ubahStatusPembayaran(Pengajuan $pengajuan, User $operator, StatusPembayaran $statusBaru): void
-    {
-        if ($pengajuan->status === StatusPengajuan::Dibatalkan) {
-            throw new InvalidArgumentException('Status pembayaran pengajuan yang dibatalkan tidak dapat diubah.');
-        }
-
-        $pembayaran = $pengajuan->pembayaran;
-        $statusPembayaranLama = $pembayaran?->status;
-
-        if ($pembayaran === null) {
-            throw new InvalidArgumentException('Pengajuan ini tidak memiliki data pembayaran.');
-        }
-
-        $urutan = StatusPembayaran::cases();
-        $indeksLama = array_search($pembayaran->status, $urutan, true);
-        $indeksBaru = array_search($statusBaru, $urutan, true);
-
-        if ($indeksLama === $indeksBaru) {
-            return; // Tidak ada perubahan.
-        }
-
-        if (abs($indeksBaru - $indeksLama) !== 1) {
-            throw new InvalidArgumentException('Status pembayaran hanya dapat berpindah satu langkah dari status saat ini.');
-        }
-
-        $pembayaran->update([
-            'status' => $statusBaru,
-            'diubah_oleh' => $operator->id,
-        ]);
-
-        $this->notifikasi->pembayaranBerubah($pengajuan);
-
-        $this->log->catat(
-            LogAktivitas::PEMBAYARAN_STATUS_BERUBAH,
-            "Operator {$operator->name} mengubah status pembayaran pengajuan {$pengajuan->nomor_pengajuan} dari {$statusPembayaranLama?->label()} menjadi {$statusBaru->label()}.",
-            $operator,
-            $pengajuan,
-            ['status_dari' => $statusPembayaranLama?->value, 'status_ke' => $statusBaru->value]
         );
     }
 

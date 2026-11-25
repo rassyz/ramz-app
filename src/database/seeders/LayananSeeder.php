@@ -20,48 +20,38 @@ class LayananSeeder extends Seeder
      */
     public function run(): void
     {
+        // Fase 11 (info langsung Rama 14 Nov 2026): layanan hanya dua —
+        // Ekspor & Impor, set dokumennya sama; yang berbeda asal
+        // dokumennya (Ekspor dari nasabah, Impor dari jasa pengiriman).
         $layanans = [
             [
-                'kode' => 'LC-IMP',
-                'nama' => 'Penerbitan L/C Impor',
-                'deskripsi' => 'Penerbitan Letter of Credit untuk pembayaran transaksi impor.',
+                'kode' => 'EKS',
+                'nama' => 'Layanan Ekspor',
+                'deskripsi' => 'Penanganan dokumen ekspor nasabah; LC yang terbit menjadi patokan pemeriksaan dokumen.',
                 'persyaratan_dokumen' => [
-                    ['nama' => 'Bill of Exchange (BOE)', 'wajib' => true],
+                    ['nama' => 'Draft', 'wajib' => true],
                     ['nama' => 'Invoice', 'wajib' => true],
                     ['nama' => 'Packing List', 'wajib' => true],
                     ['nama' => 'Bill of Lading', 'wajib' => true],
-                    ['nama' => 'Insurance', 'wajib' => true],
-                    ['nama' => 'Surat Jalan', 'wajib' => false],
+                    ['nama' => 'Asuransi', 'wajib' => true],
                     ['nama' => 'Sertifikat', 'wajib' => false],
+                    ['nama' => 'Pre Order', 'wajib' => false],
+                    ['nama' => 'Surat Jalan', 'wajib' => false],
                 ],
             ],
             [
-                'kode' => 'KOL-EKS',
-                'nama' => 'Koleksi Dokumen Ekspor',
-                'deskripsi' => 'Penanganan dokumen ekspor melalui documentary collection.',
+                'kode' => 'IMP',
+                'nama' => 'Layanan Impor',
+                'deskripsi' => 'Penanganan dokumen impor yang diterima dari jasa pengiriman untuk diteruskan ke nasabah.',
                 'persyaratan_dokumen' => [
+                    ['nama' => 'Draft', 'wajib' => true],
                     ['nama' => 'Invoice', 'wajib' => true],
                     ['nama' => 'Packing List', 'wajib' => true],
                     ['nama' => 'Bill of Lading', 'wajib' => true],
-                ],
-            ],
-            [
-                'kode' => 'TRF-VALAS',
-                'nama' => 'Transfer Valas / Remittance',
-                'deskripsi' => 'Pengiriman dana valuta asing ke penerima di luar negeri.',
-                'persyaratan_dokumen' => [
-                    ['nama' => 'Invoice', 'wajib' => true],
-                    ['nama' => 'Formulir Transfer', 'wajib' => true],
-                ],
-            ],
-            [
-                'kode' => 'IMP-OA',
-                'nama' => 'Pembayaran Impor Non-L/C',
-                'deskripsi' => 'Pembayaran impor secara open account tanpa Letter of Credit.',
-                'persyaratan_dokumen' => [
-                    ['nama' => 'Invoice', 'wajib' => true],
-                    ['nama' => 'Bill of Lading', 'wajib' => true],
-                    ['nama' => 'Packing List', 'wajib' => true],
+                    ['nama' => 'Asuransi', 'wajib' => true],
+                    ['nama' => 'Sertifikat', 'wajib' => false],
+                    ['nama' => 'Pre Order', 'wajib' => false],
+                    ['nama' => 'Surat Jalan', 'wajib' => false],
                 ],
             ],
         ];

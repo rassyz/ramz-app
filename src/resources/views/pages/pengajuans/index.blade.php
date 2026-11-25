@@ -3,6 +3,8 @@
 use App\Enums\StatusPengajuan;
 use App\Models\Layanan;
 use App\Models\Pengajuan;
+use App\Models\User;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,6 +20,13 @@ new #[Title('Pantau Pengajuan')] class extends Component
 
     public string $layananFilter = '';
 
+    // Form buat pengajuan oleh staf (Fase 11 — pengajuan dibuat
+    // Operator karena akun nasabah baru ada setelah LC turun).
+    public string $formNasabahId = '';
+
+    public string $formLayananId = '';
+
+
     /**
      * Pantauan menyeluruh hanya untuk Admin dan Operator.
      */
@@ -32,6 +41,61 @@ new #[Title('Pantau Pengajuan')] class extends Component
     }
 
     #[Computed]
+    public function daftarNasabah()
+    {
+        return User::where('role', 'nasabah')->orderBy('name')->get();
+    }
+
+    /**
+     * Operator/Admin membuat pengajuan untuk seorang nasabah: cukup
+     * nasabah + layanan. Nomor pengajuan dibuat otomatis, snapshot
+     * persyaratan disalin dari templat layanan, dan seluruh data
+     * acuan (termasuk nomor invoice, yang baru terbit setelah LC
+     * turun) dilengkapi menyusul pada detail pengajuan. Pembayaran
+     * tidak lagi dibuat (Fase 11 — fokus sistem adalah dokumen).
+     */
+    public function buatPengajuan(): void
+    {
+        $validated = $this->validate([
+            'formNasabahId' => ['required', Rule::exists('users', 'id')],
+            'formLayananId' => ['required', Rule::exists('layanans', 'id')],
+        ], [
+            'formNasabahId.required' => 'Pilih nasabah terlebih dahulu.',
+            'formLayananId.required' => 'Pilih layanan terlebih dahulu.',
+        ]);
+
+        $layanan = Layanan::findOrFail($validated['formLayananId']);
+
+        $pengajuan = Pengajuan::create([
+            'user_id' => $validated['formNasabahId'],
+            'layanan_id' => $layanan->id,
+            'nomor_pengajuan' => Pengajuan::generateNomorPengajuan(),
+            'status' => StatusPengajuan::MenungguVerifikasi,
+            'persyaratan_dokumen' => $layanan->persyaratan_dokumen ?? [],
+        ]);
+
+        $pengajuan->riwayatStatuses()->create([
+            'status_dari' => null,
+            'status_ke' => StatusPengajuan::MenungguVerifikasi,
+            'catatan' => 'Pengajuan dibuat oleh staf.',
+            'changed_by' => auth()->id(),
+        ]);
+
+        $this->redirect(route('pengajuans.show', $pengajuan), navigate: true);
+    }
+
+    /**
+     * Layanan aktif saja untuk pilihan form buat pengajuan — layanan
+     * lama yang dinonaktifkan tidak boleh dipilih untuk pengajuan baru
+     * (daftar lengkap tetap dipakai dropdown filter riwayat).
+     */
+    #[Computed]
+    public function daftarLayananAktif()
+    {
+        return Layanan::aktif()->orderBy('nama')->get();
+    }
+
+    #[Computed]
     public function daftarLayanan()
     {
         return Layanan::orderBy('nama')->get();
@@ -41,7 +105,7 @@ new #[Title('Pantau Pengajuan')] class extends Component
     public function pengajuans()
     {
         return Pengajuan::query()
-            ->with(['user', 'layanan', 'pembayaran'])
+            ->with(['user', 'layanan'])
             ->when($this->search, function ($query) {
                 $query->where(function ($query) {
                     $query->where('nomor_pengajuan', 'like', '%'.$this->search.'%')
@@ -58,9 +122,30 @@ new #[Title('Pantau Pengajuan')] class extends Component
 
 <section class="w-full">
     <flux:heading level="1" size="xl">Pantau Pengajuan</flux:heading>
-    <flux:subheading>Seluruh pengajuan layanan dari nasabah beserta status dan pembayaran terhubungnya.</flux:subheading>
+    <flux:subheading>Seluruh pengajuan layanan dari nasabah beserta statusnya. Pengajuan baru dibuat oleh staf untuk nasabah.</flux:subheading>
 
     <flux:separator class="mt-4 mb-6" />
+
+
+    <form wire:submit="buatPengajuan" class="mb-6 space-y-4 rounded-2xl border border-zinc-200 p-5 dark:border-zinc-700">
+        <flux:heading level="2">Buat Pengajuan Baru</flux:heading>
+        <flux:text size="sm">Pengajuan dibuat untuk nasabah terpilih; data acuan LC dilengkapi pada detail pengajuan ketika LC terbit.</flux:text>
+        <div class="grid gap-4 sm:grid-cols-2">
+            <flux:select wire:model="formNasabahId" label="Nasabah" required>
+                <option value="">— Pilih nasabah —</option>
+                @foreach ($this->daftarNasabah as $nasabah)
+                    <option value="{{ $nasabah->id }}">{{ $nasabah->name }} ({{ $nasabah->email }})</option>
+                @endforeach
+            </flux:select>
+            <flux:select wire:model="formLayananId" label="Layanan" required>
+                <option value="">— Pilih layanan —</option>
+                @foreach ($this->daftarLayananAktif as $layanan)
+                    <option value="{{ $layanan->id }}">{{ $layanan->nama }}</option>
+                @endforeach
+            </flux:select>
+        </div>
+        <flux:button variant="primary" type="submit">Buat Pengajuan</flux:button>
+    </form>
 
     <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:flex lg:flex-wrap lg:items-center">
         <flux:input wire:model.live="search" type="search" placeholder="Cari nomor pengajuan, invoice, atau nasabah..." class="w-full sm:col-span-2 lg:col-span-1 lg:max-w-sm" />
@@ -72,7 +157,7 @@ new #[Title('Pantau Pengajuan')] class extends Component
         </flux:select>
         <flux:select wire:model.live="layananFilter" class="w-full lg:max-w-64">
             <option value="">Semua Layanan</option>
-            @foreach ($this->daftarLayanan as $layanan)
+            @foreach ($this->daftarLayananAktif as $layanan)
                 <option value="{{ $layanan->id }}">{{ $layanan->nama }}</option>
             @endforeach
         </flux:select>
@@ -92,7 +177,7 @@ new #[Title('Pantau Pengajuan')] class extends Component
                     <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nasabah</dt><dd class="text-right font-medium">{{ $pengajuan->user->name }}</dd></div>
                     <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Layanan</dt><dd class="text-right font-medium">{{ $pengajuan->layanan->nama }}</dd></div>
                     <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Invoice</dt><dd class="text-right font-medium">{{ $pengajuan->nomor_invoice }}</dd></div>
-                    <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nominal</dt><dd class="text-right font-medium">{{ $pengajuan->pembayaran?->nominalFormatted() ?? '-' }}</dd></div>
+                    <div class="flex justify-between gap-4"><dt class="text-zinc-500 dark:text-zinc-400">Nominal Acuan</dt><dd class="text-right font-medium">{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</dd></div>
                 </dl>
                 <flux:button :href="route('pengajuans.show', $pengajuan)" class="mt-4 w-full">Detail</flux:button>
             </div>
@@ -124,7 +209,7 @@ new #[Title('Pantau Pengajuan')] class extends Component
                     <flux:table.cell>{{ $pengajuan->user->name }}</flux:table.cell>
                     <flux:table.cell>{{ $pengajuan->layanan->nama }}</flux:table.cell>
                     <flux:table.cell>{{ $pengajuan->nomor_invoice }}</flux:table.cell>
-                    <flux:table.cell>{{ $pengajuan->pembayaran?->nominalFormatted() ?? '-' }}</flux:table.cell>
+                    <flux:table.cell>{{ $pengajuan->nominal_acuan !== null ? ($pengajuan->mata_uang_acuan?->value.' '.number_format((float) $pengajuan->nominal_acuan, 2, ',', '.')) : '-' }}</flux:table.cell>
                     <flux:table.cell><flux:badge :color="$pengajuan->status->color()">{{ $pengajuan->status->label() }}</flux:badge></flux:table.cell>
                     <flux:table.cell>
                         <div class="flex justify-end">

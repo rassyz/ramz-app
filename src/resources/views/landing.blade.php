@@ -45,8 +45,8 @@
                         <span class="mr-1 text-sm text-zinc-500">{{ auth()->user()->name }} · {{ auth()->user()->role->label() }}</span>
                         <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
                     @else
-                        <a href="{{ route('login') }}" class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">Masuk</a>
-                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Daftar sebagai Nasabah</a>
+                        {{-- <a href="{{ route('login') }}" class="rounded-xl px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">Masuk</a> --}}
+                        <a href="{{ route('login') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Masuk</a>
                     @endauth
                 </div>
 
@@ -69,7 +69,7 @@
                         <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white">Buka Dashboard</a>
                     @else
                         <a href="{{ route('login') }}" class="rounded-xl bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700">Masuk</a>
-                        <a href="{{ route('register') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white">Daftar sebagai Nasabah</a>
+                        <a href="{{ route('login') }}" class="rounded-xl bg-[#4353ff] px-4 py-2 text-sm font-medium text-white">Masuk</a>
                     @endauth
                 </div>
             </div>
@@ -96,11 +96,10 @@
                         @auth
                             <a href="{{ route('dashboard') }}" class="rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">Buka Dashboard</a>
                         @else
-                            <a href="{{ route('register') }}" class="inline-flex items-center gap-2 rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">
-                                Mulai Pengajuan
+                            <a href="{{ route('login') }}" class="inline-flex items-center gap-2 rounded-xl bg-[#4353ff] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_32px_rgb(67,83,255,0.35)] transition hover:bg-primary-strong active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff] focus-visible:ring-offset-2">
+                                Masuk ke Aplikasi
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="size-4"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M21 12H3" /></svg>
                             </a>
-                            <a href="{{ route('login') }}" class="rounded-xl bg-zinc-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-zinc-700 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2">Masuk</a>
                         @endauth
                         <a href="#simulasi" class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-zinc-700 shadow-sm ring-1 ring-zinc-950/5 transition hover:text-[#4353ff] active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4353ff]">Coba Simulasi Checker</a>
                     </div>
@@ -307,7 +306,7 @@
                         <div>
                             <h3 class="text-sm font-semibold uppercase tracking-wide text-zinc-500">Dokumen yang diunggah</h3>
                             <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                                @foreach (['Bill of Exchange (BOE)', 'Invoice', 'Packing List', 'Bill of Lading', 'Insurance'] as $dok)
+                                @foreach (['Draft', 'Invoice', 'Packing List', 'Bill of Lading', 'Asuransi'] as $dok)
                                     <label class="flex cursor-pointer items-center gap-2.5 rounded-2xl border border-zinc-200 px-4 py-3 text-sm transition hover:border-[#4353ff] hover:bg-[#f7f8ff]">
                                         <input type="checkbox" class="dok-simulasi size-4 accent-[#4353ff]" value="{{ $dok }}" checked>
                                         {{ $dok }} <span class="text-xs text-zinc-400">(wajib)</span>
@@ -387,7 +386,7 @@
                 <div class="mt-10 grid gap-4 md:grid-cols-3">
                     <div class="reveal rounded-3xl bg-[#fbfbfe] p-6 ring-1 ring-zinc-950/5 transition duration-200 hover:-translate-y-1 hover:bg-white hover:shadow-[0_20px_44px_rgb(0,0,0,0.08)]">
                         <span class="inline-block rounded-full bg-[#eef0ff] px-3 py-1 text-xs font-semibold text-[#4353ff]">Nasabah</span>
-                        <p class="mt-3 text-sm leading-relaxed text-zinc-600">Mendaftar secara mandiri, mengajukan layanan, mengunggah dan memperbaiki dokumen, serta memantau status dan riwayat pengajuannya sendiri.</p>
+                        <p class="mt-3 text-sm leading-relaxed text-zinc-600">Masuk dengan akun yang dibuatkan admin, mengunggah dan memperbaiki dokumen, serta memantau status dan riwayat pengajuannya sendiri.</p>
                     </div>
                     <div class="reveal rounded-3xl bg-linear-to-br from-[#4353ff] to-[#6d7cff] p-6 text-white shadow-[0_12px_32px_rgb(67,83,255,0.30)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgb(67,83,255,0.40)]">
                         <span class="inline-block rounded-full bg-white/20 px-3 py-1 text-xs font-semibold">Operator</span>
@@ -430,7 +429,7 @@
                     ['Apakah sistem ini memproses transaksi keuangan secara langsung?', 'Tidak. Sistem ini adalah sistem monitoring: pengajuan, data pembayaran, dan dokumen tercatat dan terpantau di dalamnya, tetapi pemrosesan transaksi keuangan tetap berada pada sistem perbankan. Tidak ada integrasi payment gateway maupun core banking.'],
                     ['Apakah Evidence Checker menggunakan AI atau OCR?', 'Tidak. Checker bekerja dengan aturan IF–THEN (rule-based): memeriksa kelengkapan dokumen sesuai persyaratan layanan dan mencocokkan lima field terstruktur yang diisi nasabah saat mengunggah Invoice. Checker tidak membaca isi berkas dan tidak menilai keaslian dokumen secara hukum.'],
                     ['Siapa yang memutuskan hasil akhir pengajuan?', 'Operator. Hasil checker adalah pendukung keputusan yang menunjukkan kelengkapan dan kesesuaian data; keputusan terverifikasi atau perlu perbaikan selalu diambil operator dan tercatat beserta alasannya.'],
-                    ['Siapa saja yang boleh mendaftar?', 'Pendaftaran publik terbuka untuk nasabah. Akun operator dan admin tidak dapat dibuat melalui pendaftaran — keduanya dibuat oleh admin demi keamanan akses.'],
+                    ['Bagaimana cara mendapatkan akun?', 'Akun tidak dibuat melalui pendaftaran mandiri. Akun nasabah dibuat oleh admin agar sesuai dengan data pada sistem inti, lalu email dan kata sandinya dikirim ke nasabah ketika LC terbit.'],
                     ['Bagaimana saya tahu status pengajuan saya berubah?', 'Sistem mengirim notifikasi melalui WhatsApp dan email pada setiap keputusan verifikasi dan perubahan status, ditambah kotak masuk notifikasi di dalam aplikasi. Pengiriman yang gagal otomatis dicoba ulang dengan mekanisme retry dan backoff.'],
                 ] as [$tanya, $jawab])
                     <details class="reveal group rounded-3xl bg-white px-6 py-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] ring-1 ring-zinc-950/5 transition hover:shadow-[0_14px_36px_rgb(0,0,0,0.07)]">
@@ -452,12 +451,12 @@
                 <div class="pola-titik pointer-events-none absolute inset-0 opacity-25 filter-[invert(1)]"></div>
                 <div class="relative">
                     <h2 class="mx-auto max-w-2xl text-3xl font-bold tracking-tight">Siap Mengajukan Layanan dengan Proses yang Terpantau?</h2>
-                    <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/85">Daftar sebagai nasabah dan ajukan layanan perdagangan atau pembayaran internasional Anda — setiap tahapnya dapat Anda pantau sampai selesai.</p>
+                    <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/85">Masuk dengan akun yang diberikan bank dan pantau setiap tahap pengajuan layanan perdagangan atau pembayaran internasional Anda sampai selesai.</p>
                     <div class="mt-7 flex flex-wrap justify-center gap-3">
                         @auth
                             <a href="{{ route('dashboard') }}" class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#4353ff] transition hover:bg-zinc-100 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4353ff]">Buka Dashboard</a>
                         @else
-                            <a href="{{ route('register') }}" class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#4353ff] transition hover:bg-zinc-100 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4353ff]">Daftar Sekarang</a>
+                            <a href="{{ route('login') }}" class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-[#4353ff] transition hover:bg-zinc-100 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#4353ff]">Masuk ke Aplikasi</a>
                             <a href="{{ route('login') }}" class="rounded-xl bg-white/15 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/25 active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">Masuk</a>
                         @endauth
                     </div>
@@ -502,7 +501,7 @@
                             <a href="{{ route('dashboard') }}" class="transition hover:text-[#4353ff]">Buka Dashboard</a>
                         @else
                             <a href="{{ route('login') }}" class="transition hover:text-[#4353ff]">Masuk</a>
-                            <a href="{{ route('register') }}" class="transition hover:text-[#4353ff]">Daftar sebagai Nasabah</a>
+                            <a href="{{ route('login') }}" class="transition hover:text-[#4353ff]">Masuk</a>
                         @endauth
                         <a href="#peran" class="transition hover:text-[#4353ff]">Peran Pengguna</a>
                         <a href="#teknologi" class="transition hover:text-[#4353ff]">Teknologi</a>
@@ -581,7 +580,7 @@
             const norm = s => (s || '').trim().toLowerCase();
 
             function jalankanPemeriksaan() {
-                const wajib = ['Bill of Exchange (BOE)', 'Invoice', 'Packing List', 'Bill of Lading', 'Insurance'];
+                const wajib = ['Draft', 'Invoice', 'Packing List', 'Bill of Lading', 'Asuransi'];
                 const tercentang = [...document.querySelectorAll('.dok-simulasi:checked')].map(i => i.value);
                 const baris = [];
                 let lengkap = true;

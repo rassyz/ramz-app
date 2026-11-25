@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Enums\MataUang;
-use App\Models\Pengajuan;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Dokumen pendukung yang diunggah nasabah untuk sebuah pengajuan
@@ -26,6 +26,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $doc_nominal
  * @property MataUang|null $doc_mata_uang
  * @property string|null $doc_jenis_layanan
+ * @property string|null $doc_nomor_dokumen
+ * @property Carbon|null $doc_tanggal_dokumen
+ * @property string|null $doc_nomor_lc
+ * @property string|null $doc_nomor_po
+ * @property string|null $doc_kuantitas
+ * @property string|null $doc_satuan
+ * @property string|null $doc_identitas_pengirim
  */
 #[Fillable([
     'pengajuan_id',
@@ -40,6 +47,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'doc_nominal',
     'doc_mata_uang',
     'doc_jenis_layanan',
+    'doc_nomor_dokumen',
+    'doc_tanggal_dokumen',
+    'doc_nomor_lc',
+    'doc_nomor_po',
+    'doc_kuantitas',
+    'doc_satuan',
+    'doc_identitas_pengirim',
 ])]
 class Dokumen extends Model
 {
@@ -54,6 +68,8 @@ class Dokumen extends Model
             'ukuran_file' => 'integer',
             'doc_nominal' => 'decimal:2',
             'doc_mata_uang' => MataUang::class,
+            'doc_tanggal_dokumen' => 'date',
+            'doc_kuantitas' => 'decimal:3',
         ];
     }
 
@@ -80,6 +96,15 @@ class Dokumen extends Model
     public function isDokumenInvoice(): bool
     {
         return str_contains(strtolower($this->jenis_dokumen), 'invoice');
+    }
+
+    /**
+     * Apakah jenis dokumen ini sama dengan nama jenis yang dicari
+     * (perbandingan longgar: trim + huruf kecil).
+     */
+    public function isJenis(string $nama): bool
+    {
+        return strtolower(trim($this->jenis_dokumen)) === strtolower(trim($nama));
     }
 
     /**
