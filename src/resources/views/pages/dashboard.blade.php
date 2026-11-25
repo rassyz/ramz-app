@@ -230,17 +230,7 @@ new #[Title('Dashboard')] class extends Component
             </p>
         </div>
 
-        <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-                        <div class="flex w-full flex-nowrap items-center gap-0.5 overflow-x-auto rounded-full border border-line bg-white p-1 scrollbar-none dark:border-night-line dark:bg-night-tile lg:w-auto [&::-webkit-scrollbar]:hidden">
-                @foreach (PeriodeDashboard::cases() as $preset)
-                    <button type="button" wire:click="$set('periode', '{{ $preset->value }}')" class="shrink-0 rounded-full px-3.25 py-1.5 text-[13px] whitespace-nowrap {{ $periode === $preset->value ? 'bg-primary font-semibold text-white' : 'font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' }}">{{ $preset->label() }}</button>
-                @endforeach
-                <button type="button" wire:click="$set('periode', 'khusus')" class="shrink-0 rounded-full px-3.25 py-1.5 text-[13px] whitespace-nowrap {{ $periode === 'khusus' ? 'bg-primary font-semibold text-white' : 'font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' }}">Khusus</button>
-            </div>
-            @if ($periode === 'khusus')
-                <flux:input wire:model.live="tanggalMulai" type="date" label="Mulai" class="w-full sm:w-44" />
-                <flux:input wire:model.live="tanggalSelesai" type="date" label="Selesai" class="w-full sm:w-44" />
-            @endif
+        <div class="flex flex-wrap items-center justify-end gap-2">
             <button type="button" wire:click="$toggle('panelPersonalisasi')" class="btn">Personalisasi</button>
             @unless (auth()->user()->isNasabah())
                 <a href="{{ route('pengajuans.index') }}" class="btn btn-primary" wire:navigate>+ Buat Pengajuan</a>
@@ -256,6 +246,20 @@ new #[Title('Dashboard')] class extends Component
                 <flux:icon.sun class="hidden size-5 dark:block" />
             </button>
         </div>
+    </div>
+
+    {{-- Baris filter periode: chip preset + tanggal khusus (baris sendiri agar tidak berebut tempat dengan judul di lebar laptop) --}}
+    <div class="flex flex-wrap items-end gap-2">
+        <div class="flex max-w-full flex-nowrap items-center gap-0.5 overflow-x-auto rounded-full border border-line bg-white p-1 scrollbar-none dark:border-night-line dark:bg-night-tile [&::-webkit-scrollbar]:hidden">
+            @foreach (PeriodeDashboard::cases() as $preset)
+                <button type="button" wire:click="$set('periode', '{{ $preset->value }}')" class="shrink-0 rounded-full px-3.25 py-1.5 text-[13px] whitespace-nowrap {{ $periode === $preset->value ? 'bg-primary font-semibold text-white' : 'font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' }}">{{ $preset->label() }}</button>
+            @endforeach
+            <button type="button" wire:click="$set('periode', 'khusus')" class="shrink-0 rounded-full px-3.25 py-1.5 text-[13px] whitespace-nowrap {{ $periode === 'khusus' ? 'bg-primary font-semibold text-white' : 'font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white' }}">Khusus</button>
+        </div>
+        @if ($periode === 'khusus')
+            <flux:input wire:model.live="tanggalMulai" type="date" label="Mulai" class="w-full sm:w-44" />
+            <flux:input wire:model.live="tanggalSelesai" type="date" label="Selesai" class="w-full sm:w-44" />
+        @endif
     </div>
 
     @if ($panelPersonalisasi)
